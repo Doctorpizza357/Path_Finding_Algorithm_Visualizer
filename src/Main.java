@@ -1,0 +1,170 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.PriorityQueue;
+
+public class Main extends JPanel {
+    private static final int GRID_SIZE = 30;
+    private final JButton[][] gridButtons;
+    private Point start;
+    private Point end;
+    private final List<Point> barriers;
+
+    public Main() {
+        setLayout(new GridLayout(GRID_SIZE, GRID_SIZE));
+        gridButtons = new JButton[GRID_SIZE][GRID_SIZE];
+        barriers = new ArrayList<>();
+
+        for (int row = 0; row < GRID_SIZE; row++) {
+            for (int col = 0; col < GRID_SIZE; col++) {
+                gridButtons[row][col] = new JButton();
+                gridButtons[row][col].setPreferredSize(new Dimension(30, 30));
+                gridButtons[row][col].setBackground(Color.WHITE);
+                add(gridButtons[row][col]);
+
+                final int r = row;
+                final int c = col;
+                gridButtons[row][col].addActionListener(e -> handleButtonClick(r, c));
+                gridButtons[row][col].addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        if (SwingUtilities.isRightMouseButton(e)) {
+                            removeBarrier(r, c);
+                        }
+                    }
+                });
+            }
+        }
+
+        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_S, 0), "startAlgorithm");
+        getActionMap().put("startAlgorithm", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (start != null && end != null) {
+                    List<Point> path = aStarPathfinding();
+                    visualizePath(path);
+                    showResetPopup();
+                }
+            }
+        });
+    }
+
+    private void handleButtonClick(int row, int col) {
+        if (start == null) {
+            start = new Point(row, col);
+            gridButtons[row][col].setBackground(Color.GREEN);
+        } else if (end == null) {
+            end = new Point(row, col);
+            gridButtons[row][col].setBackground(Color.RED);
+        } else {
+            addBarrier(row, col);
+        }
+    }
+
+    private void addBarrier(int row, int col) {
+        barriers.add(new Point(row, col));
+        gridButtons[row][col].setBackground(Color.BLACK);
+    }
+
+    private void removeBarrier(int row, int col) {
+        Point barrierToRemove = new Point(row, col);
+        barriers.remove(barrierToRemove);
+        gridButtons[row][col].setBackground(Color.WHITE);
+    }
+
+    private List<Point> aStarPathfinding() {
+        PriorityQueue<Node> openSet = new PriorityQueue<>(Comparator.comparingDouble(node -> node.f));
+        boolean[][] visited = new boolean[GRID_SIZE][GRID_SIZE];
+
+        Node startNode = new Node(start.x, start.y);
+        startNode.g = 0;
+        startNode.h = calculateHeuristic(startNode, end);
+        startNode.f = startNode.g + startNode.h;
+        openSet.add(startNode);
+
+        while (!openSet.isEmpty()) {
+            Node current = openSet.poll();
+            visited[current.row][current.col] = true;
+
+            if (current.row == end.x && current.col == end.y) {
+                return reconstructPath(current);
+            }
+
+            int[] dRow = {0, 1, 0, -1};
+            int[] dCol = {1, 0, -1, 0};
+            for (int i = 0; i < 4; i++) {
+                int newRow = current.row + dRow[i];
+                int newCol = current.col + dCol[i];
+
+                if (isValid(newRow, newCol) && !visited[newRow][newCol] && !barriers.contains(new Point(newRow, newCol))) {
+                    double tentativeG = current.g + 1;
+                    Node neighbor = new Node(newRow, newCol);
+                    neighbor.g = tentativeG;
+                    neighbor.h = calculateHeuristic(neighbor, end);
+                    neighbor.f = neighbor.g + neighbor.h;
+                    neighbor.parent = current;
+
+                    openSet.add(neighbor);
+                    visited[newRow][newCol] = true;
+                }
+            }
+        }
+
+        return new ArrayList<>();
+    }
+
+    private List<Point> reconstructPath(Node current) {
+        List<Point> path = new ArrayList<>();
+        while (current != null) {
+            path.add(new Point(current.row, current.col));
+            current = current.parent;
+        }
+        return path;
+    }
+
+    private double calculateHeuristic(Node node, Point end) {
+        return Math.sqrt((node.row - end.x) * (node.row - end.x) + (node.col - end.y) * (node.col - end.y));
+    }
+
+    private boolean isValid(int row, int col) {
+        return row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE;
+    }
+
+    private void visualizePath(List<Point> path) {
+        for (Point p : path) {
+            gridButtons[p.x][p.y].setBackground(Color.GREEN);
+        }
+    }
+
+    private void showResetPopup() {
+        int choice = JOptionPane.showConfirmDialog(this, "Visualization complete. Reset?", "Reset", JOptionPane.YES_NO_OPTION);
+        if (choice == JOptionPane.YES_OPTION) {
+            reset();
+        }
+    }
+
+    private void reset() {
+        start = null;
+        end = null;
+        barriers.clear();
+        for (int row = 0; row < GRID_SIZE; row++) {
+            for (int col = 0; col < GRID_SIZE; col++) {
+                gridButtons[row][col].setBackground(Color.WHITE);
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("Grid Pathfinding");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.getContentPane().add(new Main());
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        });
+    }
+}
