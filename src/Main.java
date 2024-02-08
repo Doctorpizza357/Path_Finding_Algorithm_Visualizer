@@ -48,6 +48,14 @@ public class Main extends JPanel {
                 }
             }
         });
+
+        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_G, 0), "generateMaze");
+        getActionMap().put("generateMaze", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                generateRandomMaze();
+            }
+        });
     }
 
     private void handleButtonClick(int row, int col) {
@@ -152,6 +160,38 @@ public class Main extends JPanel {
             for (int col = 0; col < GRID_SIZE; col++) {
                 gridButtons[row][col].setBackground(Color.WHITE);
             }
+        }
+    }
+
+    private void generateRandomMaze() {
+        start = null;
+        end = null;
+        barriers.clear();
+        for (int row = 0; row < GRID_SIZE; row++) {
+            for (int col = 0; col < GRID_SIZE; col++) {
+                gridButtons[row][col].setBackground(Color.WHITE);
+            }
+        }
+
+        Random random = new Random();
+        start = new Point(random.nextInt(GRID_SIZE), random.nextInt(GRID_SIZE));
+        gridButtons[start.x][start.y].setBackground(Color.GREEN);
+
+        do {
+            end = new Point(random.nextInt(GRID_SIZE), random.nextInt(GRID_SIZE));
+        } while (start.equals(end));
+        gridButtons[end.x][end.y].setBackground(Color.RED);
+
+        int numBarriers = random.nextInt(GRID_SIZE * GRID_SIZE / 4); // Limit barriers to 25% of grid size
+        for (int i = 0; i < numBarriers; i++) {
+            int barrierX;
+            int barrierY;
+            do {
+                barrierX = random.nextInt(GRID_SIZE);
+                barrierY = random.nextInt(GRID_SIZE);
+            } while (start.equals(new Point(barrierX, barrierY)) || end.equals(new Point(barrierX, barrierY)));
+            barriers.add(new Point(barrierX, barrierY));
+            gridButtons[barrierX][barrierY].setBackground(Color.BLACK);
         }
     }
 
