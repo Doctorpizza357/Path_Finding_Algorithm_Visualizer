@@ -44,10 +44,18 @@ public class Main extends JPanel {
                 if (start != null && end != null) {
                     List<Point> path = aStarPathfinding();
                     visualizePath(path);
-                    showResetPopup();
                 }
             }
         });
+
+        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_R, 0), "reset");
+        getActionMap().put("reset", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showResetPopup();
+            }
+        });
+
 
         getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_G, 0), "generateMaze");
         getActionMap().put("generateMaze", new AbstractAction() {
@@ -65,6 +73,8 @@ public class Main extends JPanel {
         } else if (end == null) {
             end = new Point(row, col);
             gridButtons[row][col].setBackground(Color.RED);
+            List<Point> path = aStarPathfinding();
+            visualizePath(path);
         } else {
             addBarrier(row, col);
         }
@@ -73,12 +83,18 @@ public class Main extends JPanel {
     private void addBarrier(int row, int col) {
         barriers.add(new Point(row, col));
         gridButtons[row][col].setBackground(Color.BLACK);
+        clearPath();
+        List<Point> path = aStarPathfinding();
+        visualizePath(path);
     }
 
     private void removeBarrier(int row, int col) {
         Point barrierToRemove = new Point(row, col);
         barriers.remove(barrierToRemove);
         gridButtons[row][col].setBackground(Color.WHITE);
+        clearPath();
+        List<Point> path = aStarPathfinding();
+        visualizePath(path);
     }
 
     private List<Point> aStarPathfinding() {
@@ -148,7 +164,7 @@ public class Main extends JPanel {
     }
 
     private void showResetPopup() {
-        int choice = JOptionPane.showConfirmDialog(this, "Visualization complete. Reset?", "Reset", JOptionPane.YES_NO_OPTION);
+        int choice = JOptionPane.showConfirmDialog(this, "Reset?", "Reset", JOptionPane.YES_NO_OPTION);
         if (choice == JOptionPane.YES_OPTION) {
             reset();
         }
@@ -164,6 +180,18 @@ public class Main extends JPanel {
             }
         }
     }
+
+    private void clearPath() {
+        for (int row = 0; row < GRID_SIZE; row++) {
+            for (int col = 0; col < GRID_SIZE; col++) {
+                Point currentPoint = new Point(row, col);
+                if (!currentPoint.equals(start) && !currentPoint.equals(end) && !barriers.contains(currentPoint)) {
+                    gridButtons[row][col].setBackground(Color.WHITE);
+                }
+            }
+        }
+    }
+
 
     private void generateRandomMaze() {
         start = null;
