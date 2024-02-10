@@ -61,7 +61,7 @@ public class Main extends JPanel {
     private void handleButtonClick(int row, int col) {
         if (start == null) {
             start = new Point(row, col);
-            gridButtons[row][col].setBackground(Color.GREEN);
+            gridButtons[row][col].setBackground(Color.blue);
         } else if (end == null) {
             end = new Point(row, col);
             gridButtons[row][col].setBackground(Color.RED);
@@ -141,7 +141,9 @@ public class Main extends JPanel {
 
     private void visualizePath(List<Point> path) {
         for (Point p : path) {
-            gridButtons[p.x][p.y].setBackground(Color.GREEN);
+            if (!p.equals(start) && !p.equals(end)) {
+                gridButtons[p.x][p.y].setBackground(Color.GREEN);
+            }
         }
     }
 
@@ -175,7 +177,7 @@ public class Main extends JPanel {
 
         Random random = new Random();
         start = new Point(random.nextInt(GRID_SIZE), random.nextInt(GRID_SIZE));
-        gridButtons[start.x][start.y].setBackground(Color.GREEN);
+        gridButtons[start.x][start.y].setBackground(Color.blue);
 
         do {
             end = new Point(random.nextInt(GRID_SIZE), random.nextInt(GRID_SIZE));
