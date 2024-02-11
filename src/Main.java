@@ -165,7 +165,7 @@ public class Main extends JPanel {
     }
 
     private boolean isColorSimilar(Color c1, Color c2) {
-        int threshold = 100; // Adjust threshold as needed
+        int threshold = 100;
         int diffRed = Math.abs(c1.getRed() - c2.getRed());
         int diffGreen = Math.abs(c1.getGreen() - c2.getGreen());
         int diffBlue = Math.abs(c1.getBlue() - c2.getBlue());
