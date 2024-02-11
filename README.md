@@ -14,12 +14,13 @@ This is a Java Swing GUI application for visualizing the A* pathfinding algorith
 ## How to Use
 
 1. Run the application.
-2. Left-click on a grid cell to place the start point (shown in green).
+2. Left-click on a grid cell to place the start point (shown in blue).
 3. Left-click on another grid cell to place the end point (shown in red).
 4. Left-click on additional grid cells to add barriers (shown in black).
 5. Press the 's' key to start the A* algorithm visualization.
 6. Press the 'g' key to generate a random maze.
-7. After visualization is complete, a popup will appear asking if you want to reset the grid.
+7. press the 'L' key to load maze from screenshot
+8. press the 'r' key to reset the maze
 
 ## Technologies Used
 

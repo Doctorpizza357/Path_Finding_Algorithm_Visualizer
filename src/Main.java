@@ -3,6 +3,9 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 import java.util.List;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import javax.imageio.ImageIO;
 
 public class Main extends JPanel {
     private static final int GRID_SIZE = 30;
@@ -64,6 +67,26 @@ public class Main extends JPanel {
                 generateRandomMaze();
             }
         });
+
+        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_L, 0), "loadScreenshot");
+        getActionMap().put("loadScreenshot", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser();
+
+
+                int returnValue = fileChooser.showOpenDialog(null);
+
+                if (returnValue == JFileChooser.APPROVE_OPTION) {
+                    File selectedFile = fileChooser.getSelectedFile();
+                    String filePath = selectedFile.getAbsolutePath();
+                    loadMazeFromScreenshot(filePath);
+                } else {
+                    System.out.println("No file selected.");
+                }
+            }
+        });
+
     }
 
     private void handleButtonClick(int row, int col) {
@@ -101,6 +124,54 @@ public class Main extends JPanel {
             visualizePath(path);
         }
     }
+
+    public void loadMazeFromScreenshot(String filePath) {
+        try {
+            BufferedImage screenshot = ImageIO.read(new File(filePath));
+            int width = screenshot.getWidth();
+            int height = screenshot.getHeight();
+
+            double cellWidth = (double) width / GRID_SIZE;
+            double cellHeight = (double) height / GRID_SIZE;
+
+            start = null;
+            end = null;
+            barriers.clear();
+
+            for (int row = 0; row < GRID_SIZE; row++) {
+                for (int col = 0; col < GRID_SIZE; col++) {
+                    int x = (int) (col * cellWidth + cellWidth / 2);
+                    int y = (int) (row * cellHeight + cellHeight / 2);
+
+                    Color pixelColor = new Color(screenshot.getRGB(x, y));
+
+                    if (isColorSimilar(pixelColor, Color.BLUE)) {
+                        start = new Point(row, col);
+                        gridButtons[row][col].setBackground(Color.BLUE);
+                    } else if (isColorSimilar(pixelColor, Color.RED)) {
+                        end = new Point(row, col);
+                        gridButtons[row][col].setBackground(Color.RED);
+                    } else if (isColorSimilar(pixelColor, Color.BLACK)) {
+                        barriers.add(new Point(row, col));
+                        gridButtons[row][col].setBackground(Color.BLACK);
+                    } else {
+                        gridButtons[row][col].setBackground(Color.WHITE);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private boolean isColorSimilar(Color c1, Color c2) {
+        int threshold = 100; // Adjust threshold as needed
+        int diffRed = Math.abs(c1.getRed() - c2.getRed());
+        int diffGreen = Math.abs(c1.getGreen() - c2.getGreen());
+        int diffBlue = Math.abs(c1.getBlue() - c2.getBlue());
+        return diffRed + diffGreen + diffBlue < threshold;
+    }
+
 
     private List<Point> aStarPathfinding() {
         PriorityQueue<Node> openSet = new PriorityQueue<>(Comparator.comparingDouble(node -> node.f));
