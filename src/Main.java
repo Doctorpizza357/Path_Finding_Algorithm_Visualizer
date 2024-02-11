@@ -81,20 +81,25 @@ public class Main extends JPanel {
     }
 
     private void addBarrier(int row, int col) {
-        barriers.add(new Point(row, col));
-        gridButtons[row][col].setBackground(Color.BLACK);
-        clearPath();
-        List<Point> path = aStarPathfinding();
-        visualizePath(path);
+        Point barrierToAdd = new Point(row, col);
+        if (!barrierToAdd.equals(start) && !barrierToAdd.equals(end)) {
+            barriers.add(barrierToAdd);
+            gridButtons[row][col].setBackground(Color.BLACK);
+            clearPath();
+            List<Point> path = aStarPathfinding();
+            visualizePath(path);
+        }
     }
 
     private void removeBarrier(int row, int col) {
         Point barrierToRemove = new Point(row, col);
-        barriers.remove(barrierToRemove);
-        gridButtons[row][col].setBackground(Color.WHITE);
-        clearPath();
-        List<Point> path = aStarPathfinding();
-        visualizePath(path);
+        if (!barrierToRemove.equals(start) && !barrierToRemove.equals(end)) {
+            barriers.remove(barrierToRemove);
+            gridButtons[row][col].setBackground(Color.WHITE);
+            clearPath();
+            List<Point> path = aStarPathfinding();
+            visualizePath(path);
+        }
     }
 
     private List<Point> aStarPathfinding() {
