@@ -19,8 +19,9 @@ This is a Java Swing GUI application for visualizing the A* pathfinding algorith
 4. Left-click on additional grid cells to add barriers (shown in black).
 5. Press the 's' key to start the A* algorithm visualization.
 6. Press the 'g' key to generate a random maze.
-7. press the 'L' key to load maze from screenshot (when taking screenshot make sure to only screenshot the actual grid and nothing else)
-8. press the 'r' key to reset the maze
+7. press the 'e' key to take a screenshot (for importing with 'L')
+8. press the 'L' key to load maze from screenshot (when taking screenshot make sure to only screenshot the actual grid and nothing else)
+9. press the 'r' key to reset the maze
 
 ## Technologies Used
 
