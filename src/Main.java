@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.awt.image.BufferedImage;
@@ -87,6 +88,14 @@ public class Main extends JPanel {
             }
         });
 
+        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_E, 0), "takeScreenshot");
+        getActionMap().put("takeScreenshot", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                takeGridScreenshot();
+            }
+        });
+
     }
 
     private void handleButtonClick(int row, int col) {
@@ -170,6 +179,25 @@ public class Main extends JPanel {
         int diffGreen = Math.abs(c1.getGreen() - c2.getGreen());
         int diffBlue = Math.abs(c1.getBlue() - c2.getBlue());
         return diffRed + diffGreen + diffBlue < threshold;
+    }
+
+    private void takeGridScreenshot() {
+        Point location = this.getLocationOnScreen();
+        Dimension size = this.getSize();
+
+        Rectangle gridRectangle = new Rectangle(location.x, location.y, size.width, size.height);
+
+        try {
+            Robot robot = new Robot();
+            BufferedImage gridImage = robot.createScreenCapture(gridRectangle);
+
+            File outputFile = new File("grid_screenshot.png");
+            ImageIO.write(gridImage, "png", outputFile);
+
+            System.out.println("Screenshot saved to: " + outputFile.getAbsolutePath());
+        } catch (AWTException | IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
 
