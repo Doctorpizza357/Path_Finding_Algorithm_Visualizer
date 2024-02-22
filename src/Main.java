@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.List;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import javax.swing.Timer;
 import javax.imageio.ImageIO;
 
 public class Main extends JPanel {
@@ -14,6 +15,10 @@ public class Main extends JPanel {
     private Point start;
     private Point end;
     private final List<Point> barriers;
+
+    int animationDelay = 100;
+
+    boolean isAnimationToggled;
 
     public Main() {
         setLayout(new GridLayout(GRID_SIZE, GRID_SIZE));
@@ -44,7 +49,8 @@ public class Main extends JPanel {
         JFrame controlFrame = new JFrame("Controls");
         controlFrame.setAlwaysOnTop(true);
         controlFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        controlFrame.setLayout(new FlowLayout());
+        controlFrame.setLayout(new GridLayout(2,5));
+        controlFrame.setResizable(false);
 
 
         JButton startButton = new JButton("Start Pathfinding");
@@ -52,23 +58,35 @@ public class Main extends JPanel {
         JButton mazeButton = new JButton("Generate Maze");
         JButton saveButton = new JButton("Save Image");
         JButton loadButton = new JButton("Load Image");
+        JRadioButton animationToggle = new JRadioButton("Animation Toggle   Delay: ");
+        JSlider animationDelaySlider = new JSlider(0,10,500,100);
 
         startButton.addActionListener(e -> {
             Action startAlgorithmAction = getActionMap().get("startAlgorithm");
-            if (startAlgorithmAction != null) {
-                startAlgorithmAction.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "startAlgorithm"));
+            Action startAlgorithmWithAnimationAction = getActionMap().get("startAlgorithmWithVisualization");
+            if (startAlgorithmAction != null && startAlgorithmWithAnimationAction != null) {
+                if (isAnimationToggled){
+                    startAlgorithmWithAnimationAction.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "startAlgorithmWithVisualization"));
+                }else {
+                    startAlgorithmAction.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "startAlgorithm"));
+                }
             }
         });
+
         clearButton.addActionListener(e -> reset());
         mazeButton.addActionListener(e -> generateRandomMaze());
         saveButton.addActionListener(e -> takeGridScreenshot());
         loadButton.addActionListener(e -> loadImage());
+        animationToggle.addActionListener(e -> isAnimationToggled = animationToggle.isSelected());
+        animationDelaySlider.addChangeListener(e -> animationDelay = animationDelaySlider.getValue());
 
         controlFrame.add(startButton);
         controlFrame.add(clearButton);
         controlFrame.add(mazeButton);
         controlFrame.add(saveButton);
         controlFrame.add(loadButton);
+        controlFrame.add(animationToggle);
+        controlFrame.add(animationDelaySlider);
 
         controlFrame.pack();
         controlFrame.setVisible(true);
@@ -83,6 +101,18 @@ public class Main extends JPanel {
                 }
             }
         });
+
+        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_S, 0), "startAlgorithmWithVisualization");
+        getActionMap().put("startAlgorithmWithVisualization", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (start != null && end != null) {
+                    List<Point> path = aStarPathfinding();
+                    visualizePathWithAnimation(path);
+                }
+            }
+        });
+
 
         getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_R, 0), "reset");
         getActionMap().put("reset", new AbstractAction() {
@@ -142,8 +172,12 @@ public class Main extends JPanel {
             end = new Point(row, col);
             gridButtons[row][col].setBackground(Color.RED);
             List<Point> path = aStarPathfinding();
-            visualizePath(path);
-        } else {
+            if (isAnimationToggled){
+                visualizePathWithAnimation(path);
+            }else{
+                visualizePath(path);
+            }
+        }else {
             addBarrier(row, col);
         }
     }
@@ -302,6 +336,28 @@ public class Main extends JPanel {
             }
         }
     }
+
+    private void visualizePathWithAnimation(List<Point> path) {
+        Timer timer = new Timer(animationDelay, null);
+        timer.addActionListener(new ActionListener() {
+            private int index = 0;
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (index < path.size()) {
+                    Point p = path.get(index);
+                    if (!p.equals(start) && !p.equals(end)) {
+                        gridButtons[p.x][p.y].setBackground(Color.GREEN);
+                    }
+                    index++;
+                } else {
+                    timer.stop();
+                }
+            }
+        });
+        timer.start();
+    }
+
 
     private void showResetPopup() {
         int choice = JOptionPane.showConfirmDialog(this, "Reset?", "Reset", JOptionPane.YES_NO_OPTION);
