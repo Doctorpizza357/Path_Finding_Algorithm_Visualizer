@@ -41,6 +41,38 @@ public class Main extends JPanel {
             }
         }
 
+        JFrame controlFrame = new JFrame("Controls");
+        controlFrame.setAlwaysOnTop(true);
+        controlFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        controlFrame.setLayout(new FlowLayout());
+
+
+        JButton startButton = new JButton("Start Pathfinding");
+        JButton clearButton = new JButton("Clear");
+        JButton mazeButton = new JButton("Generate Maze");
+        JButton saveButton = new JButton("Save Image");
+        JButton loadButton = new JButton("Load Image");
+
+        startButton.addActionListener(e -> {
+            Action startAlgorithmAction = getActionMap().get("startAlgorithm");
+            if (startAlgorithmAction != null) {
+                startAlgorithmAction.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "startAlgorithm"));
+            }
+        });
+        clearButton.addActionListener(e -> reset());
+        mazeButton.addActionListener(e -> generateRandomMaze());
+        saveButton.addActionListener(e -> takeGridScreenshot());
+        loadButton.addActionListener(e -> loadImage());
+
+        controlFrame.add(startButton);
+        controlFrame.add(clearButton);
+        controlFrame.add(mazeButton);
+        controlFrame.add(saveButton);
+        controlFrame.add(loadButton);
+
+        controlFrame.pack();
+        controlFrame.setVisible(true);
+
         getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_S, 0), "startAlgorithm");
         getActionMap().put("startAlgorithm", new AbstractAction() {
             @Override
@@ -73,18 +105,7 @@ public class Main extends JPanel {
         getActionMap().put("loadScreenshot", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                JFileChooser fileChooser = new JFileChooser();
-
-
-                int returnValue = fileChooser.showOpenDialog(null);
-
-                if (returnValue == JFileChooser.APPROVE_OPTION) {
-                    File selectedFile = fileChooser.getSelectedFile();
-                    String filePath = selectedFile.getAbsolutePath();
-                    loadMazeFromScreenshot(filePath);
-                } else {
-                    System.out.println("No file selected.");
-                }
+                loadImage();
             }
         });
 
@@ -96,6 +117,21 @@ public class Main extends JPanel {
             }
         });
 
+    }
+
+    public void loadImage(){
+        JFileChooser fileChooser = new JFileChooser();
+
+
+        int returnValue = fileChooser.showOpenDialog(null);
+
+        if (returnValue == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = fileChooser.getSelectedFile();
+            String filePath = selectedFile.getAbsolutePath();
+            loadMazeFromScreenshot(filePath);
+        } else {
+            System.out.println("No file selected.");
+        }
     }
 
     private void handleButtonClick(int row, int col) {
@@ -316,7 +352,7 @@ public class Main extends JPanel {
         } while (start.equals(end));
         gridButtons[end.x][end.y].setBackground(Color.RED);
 
-        int numBarriers = random.nextInt(GRID_SIZE * GRID_SIZE / 4); // Limit barriers to 25% of grid size
+        int numBarriers = random.nextInt(GRID_SIZE * GRID_SIZE / 4);
         for (int i = 0; i < numBarriers; i++) {
             int barrierX;
             int barrierY;
