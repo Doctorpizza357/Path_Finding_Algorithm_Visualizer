@@ -96,8 +96,8 @@ public class Main extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (start != null && end != null) {
-                    List<Point> path = aStarPathfinding();
-                    visualizePath(path);
+                    List<List<Point>> paths = aStarPathfinding();
+                    visualizePath(paths.get(1));
                 }
             }
         });
@@ -107,8 +107,8 @@ public class Main extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (start != null && end != null) {
-                    List<Point> path = aStarPathfinding();
-                    visualizePathWithAnimation(path);
+                    List<List<Point>> paths = aStarPathfinding();
+                    visualizePathWithAnimation(paths.get(0), paths.get(1));
                 }
             }
         });
@@ -171,11 +171,11 @@ public class Main extends JPanel {
         } else if (end == null) {
             end = new Point(row, col);
             gridButtons[row][col].setBackground(Color.RED);
-            List<Point> path = aStarPathfinding();
+            List<List<Point>> paths = aStarPathfinding();
             if (isAnimationToggled){
-                visualizePathWithAnimation(path);
+                visualizePathWithAnimation(paths.get(0), paths.get(1));
             }else{
-                visualizePath(path);
+                visualizePath(paths.get(1));
             }
         }else {
             addBarrier(row, col);
@@ -188,8 +188,8 @@ public class Main extends JPanel {
             barriers.add(barrierToAdd);
             gridButtons[row][col].setBackground(Color.BLACK);
             clearPath();
-            List<Point> path = aStarPathfinding();
-            visualizePath(path);
+            List<List<Point>> paths = aStarPathfinding();
+            visualizePath(paths.get(1));
         }
     }
 
@@ -199,8 +199,8 @@ public class Main extends JPanel {
             barriers.remove(barrierToRemove);
             gridButtons[row][col].setBackground(Color.WHITE);
             clearPath();
-            List<Point> path = aStarPathfinding();
-            visualizePath(path);
+            List<List<Point>> paths = aStarPathfinding();
+            visualizePath(paths.get(1));
         }
     }
 
@@ -271,9 +271,11 @@ public class Main extends JPanel {
     }
 
 
-    private List<Point> aStarPathfinding() {
+    private List<List<Point>> aStarPathfinding() {
         PriorityQueue<Node> openSet = new PriorityQueue<>(Comparator.comparingDouble(node -> node.f));
         boolean[][] visited = new boolean[GRID_SIZE][GRID_SIZE];
+        List<Point> explorationPath = new ArrayList<>();
+        List<Point> fastestPath = new ArrayList<>();
 
         Node startNode = new Node(start.x, start.y);
         startNode.g = 0;
@@ -283,10 +285,13 @@ public class Main extends JPanel {
 
         while (!openSet.isEmpty()) {
             Node current = openSet.poll();
+            explorationPath.add(new Point(current.row, current.col));
+
             visited[current.row][current.col] = true;
 
             if (current.row == end.x && current.col == end.y) {
-                return reconstructPath(current);
+                fastestPath = reconstructPath(current);
+                return Arrays.asList(explorationPath, fastestPath);
             }
 
             int[] dRow = {0, 1, 0, -1};
@@ -309,8 +314,9 @@ public class Main extends JPanel {
             }
         }
 
-        return new ArrayList<>();
+        return Arrays.asList(explorationPath, fastestPath);
     }
+
 
     private List<Point> reconstructPath(Node current) {
         List<Point> path = new ArrayList<>();
@@ -337,19 +343,26 @@ public class Main extends JPanel {
         }
     }
 
-    private void visualizePathWithAnimation(List<Point> path) {
+    private void visualizePathWithAnimation(List<Point> explorationPath, List<Point> fastestPath) {
         Timer timer = new Timer(animationDelay, null);
         timer.addActionListener(new ActionListener() {
-            private int index = 0;
+            private int explorationIndex = 0;
+            private int fastestIndex = 0;
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (index < path.size()) {
-                    Point p = path.get(index);
-                    if (!p.equals(start) && !p.equals(end)) {
-                        gridButtons[p.x][p.y].setBackground(Color.GREEN);
+                if (explorationIndex < explorationPath.size()) {
+                    Point explorationPoint = explorationPath.get(explorationIndex);
+                    if (!explorationPoint.equals(start) && !explorationPoint.equals(end)) {
+                        gridButtons[explorationPoint.x][explorationPoint.y].setBackground(Color.YELLOW);
                     }
-                    index++;
+                    explorationIndex++;
+                } else if (fastestIndex < fastestPath.size()) {
+                    Point fastestPoint = fastestPath.get(fastestIndex);
+                    if (!fastestPoint.equals(start) && !fastestPoint.equals(end)) {
+                        gridButtons[fastestPoint.x][fastestPoint.y].setBackground(Color.GREEN);
+                    }
+                    fastestIndex++;
                 } else {
                     timer.stop();
                 }
@@ -357,6 +370,7 @@ public class Main extends JPanel {
         });
         timer.start();
     }
+
 
 
     private void showResetPopup() {
