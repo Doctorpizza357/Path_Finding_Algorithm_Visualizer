@@ -101,8 +101,13 @@ public class Main extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (start != null && end != null) {
-                    List<List<Point>> paths = aStarPathfinding();
-                    visualizePath(paths.get(1));
+                    if (!isAnimationToggled) {
+                        List<List<Point>> paths = aStarPathfinding();
+                        visualizePath(paths.get(1));
+                    }else {
+                        List<List<Point>> paths = aStarPathfinding();
+                        visualizePathWithAnimation(paths.get(0), paths.get(1));
+                    }
                 }
             }
         });
@@ -112,8 +117,13 @@ public class Main extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (start != null && end != null) {
-                    List<List<Point>> paths = aStarPathfinding();
-                    visualizePathWithAnimation(paths.get(0), paths.get(1));
+                    if (isAnimationToggled) {
+                        List<List<Point>> paths = aStarPathfinding();
+                        visualizePathWithAnimation(paths.get(0), paths.get(1));
+                    }else {
+                        List<List<Point>> paths = aStarPathfinding();
+                        visualizePath(paths.get(1));
+                    }
                 }
             }
         });
