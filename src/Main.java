@@ -172,9 +172,7 @@ public class Main extends JPanel {
             end = new Point(row, col);
             gridButtons[row][col].setBackground(Color.RED);
             List<List<Point>> paths = aStarPathfinding();
-            if (isAnimationToggled){
-                visualizePathWithAnimation(paths.get(0), paths.get(1));
-            }else{
+            if (!isAnimationToggled) {
                 visualizePath(paths.get(1));
             }
         }else {
@@ -188,8 +186,10 @@ public class Main extends JPanel {
             barriers.add(barrierToAdd);
             gridButtons[row][col].setBackground(Color.BLACK);
             clearPath();
-            List<List<Point>> paths = aStarPathfinding();
-            visualizePath(paths.get(1));
+            if (!isAnimationToggled) {
+                List<List<Point>> paths = aStarPathfinding();
+                visualizePath(paths.get(1));
+            }
         }
     }
 
@@ -199,8 +199,10 @@ public class Main extends JPanel {
             barriers.remove(barrierToRemove);
             gridButtons[row][col].setBackground(Color.WHITE);
             clearPath();
-            List<List<Point>> paths = aStarPathfinding();
-            visualizePath(paths.get(1));
+            if (!isAnimationToggled) {
+                List<List<Point>> paths = aStarPathfinding();
+                visualizePath(paths.get(1));
+            }
         }
     }
 
