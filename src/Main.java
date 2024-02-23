@@ -18,6 +18,8 @@ public class Main extends JPanel {
 
     int animationDelay = 100;
 
+    int mazeDensity = GRID_SIZE * GRID_SIZE / 4;
+
     boolean isAnimationToggled;
 
     public Main() {
@@ -60,6 +62,7 @@ public class Main extends JPanel {
         JButton loadButton = new JButton("Load Image");
         JRadioButton animationToggle = new JRadioButton("Animation Toggle   Delay: ");
         JSlider animationDelaySlider = new JSlider(0,10,500,100);
+        JSlider mazeDensitySlider = new JSlider(100,GRID_SIZE * GRID_SIZE,mazeDensity);
 
         startButton.addActionListener(e -> {
             Action startAlgorithmAction = getActionMap().get("startAlgorithm");
@@ -79,6 +82,7 @@ public class Main extends JPanel {
         loadButton.addActionListener(e -> loadImage());
         animationToggle.addActionListener(e -> isAnimationToggled = animationToggle.isSelected());
         animationDelaySlider.addChangeListener(e -> animationDelay = animationDelaySlider.getValue());
+        mazeDensitySlider.addChangeListener(e -> mazeDensity = mazeDensitySlider.getValue());
 
         controlFrame.add(startButton);
         controlFrame.add(clearButton);
@@ -87,6 +91,7 @@ public class Main extends JPanel {
         controlFrame.add(loadButton);
         controlFrame.add(animationToggle);
         controlFrame.add(animationDelaySlider);
+        controlFrame.add(mazeDensitySlider);
 
         controlFrame.pack();
         controlFrame.setVisible(true);
@@ -424,7 +429,7 @@ public class Main extends JPanel {
         } while (start.equals(end));
         gridButtons[end.x][end.y].setBackground(Color.RED);
 
-        int numBarriers = random.nextInt(GRID_SIZE * GRID_SIZE / 4);
+        int numBarriers = random.nextInt(mazeDensity);
         for (int i = 0; i < numBarriers; i++) {
             int barrierX;
             int barrierY;
