@@ -66,14 +66,7 @@ public class Main extends JPanel {
 
         startButton.addActionListener(e -> {
             Action startAlgorithmAction = getActionMap().get("startAlgorithm");
-            Action startAlgorithmWithAnimationAction = getActionMap().get("startAlgorithmWithVisualization");
-            if (startAlgorithmAction != null && startAlgorithmWithAnimationAction != null) {
-                if (isAnimationToggled){
-                    startAlgorithmWithAnimationAction.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "startAlgorithmWithVisualization"));
-                }else {
-                    startAlgorithmAction.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "startAlgorithm"));
-                }
-            }
+            startAlgorithmAction.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "startAlgorithm"));
         });
 
         clearButton.addActionListener(e -> reset());
@@ -101,28 +94,11 @@ public class Main extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (start != null && end != null) {
+                    List<List<Point>> paths = aStarPathfinding();
                     if (!isAnimationToggled) {
-                        List<List<Point>> paths = aStarPathfinding();
                         visualizePath(paths.get(1));
                     }else {
-                        List<List<Point>> paths = aStarPathfinding();
                         visualizePathWithAnimation(paths.get(0), paths.get(1));
-                    }
-                }
-            }
-        });
-
-        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_S, 0), "startAlgorithmWithVisualization");
-        getActionMap().put("startAlgorithmWithVisualization", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (start != null && end != null) {
-                    if (isAnimationToggled) {
-                        List<List<Point>> paths = aStarPathfinding();
-                        visualizePathWithAnimation(paths.get(0), paths.get(1));
-                    }else {
-                        List<List<Point>> paths = aStarPathfinding();
-                        visualizePath(paths.get(1));
                     }
                 }
             }
