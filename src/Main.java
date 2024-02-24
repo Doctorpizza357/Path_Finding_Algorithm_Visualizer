@@ -187,7 +187,7 @@ public class Main extends JPanel {
     private void removeBarrier(int row, int col) {
         Point barrierToRemove = new Point(row, col);
         if (!barrierToRemove.equals(start) && !barrierToRemove.equals(end)) {
-            barriers.remove(barrierToRemove);
+            barriers.removeIf(p -> p.equals(barrierToRemove));
             gridButtons[row][col].setBackground(Color.WHITE);
             clearPath();
             if (!isAnimationToggled) {
@@ -325,7 +325,7 @@ public class Main extends JPanel {
     }
 
     private boolean isValid(int row, int col) {
-        return row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE;
+        return row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE && !barriers.contains(new Point(row, col));
     }
 
     private void visualizePath(List<Point> path) {
