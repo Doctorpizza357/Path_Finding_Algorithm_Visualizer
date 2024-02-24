@@ -22,6 +22,7 @@ This is a Java Swing GUI application for visualizing the A* pathfinding algorith
 7. press the 'e' key to take a screenshot (for importing with 'L')
 8. press the 'L' key to load maze from screenshot (when taking screenshot make sure to only screenshot the actual grid and nothing else)
 9. press the 'r' key to reset the maze
+10. press the 'f' key to change grid and button size
 
 ## Technologies Used
 
