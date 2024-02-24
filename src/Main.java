@@ -10,8 +10,8 @@ import javax.swing.Timer;
 import javax.imageio.ImageIO;
 
 public class Main extends JPanel {
-    private static final int GRID_SIZE = 30;
-    private final JButton[][] gridButtons;
+    private static int GRID_SIZE = 30;
+    private JButton[][] gridButtons;
     private Point start;
     private Point end;
     private final List<Point> barriers;
@@ -61,8 +61,9 @@ public class Main extends JPanel {
         JButton saveButton = new JButton("Save Image");
         JButton loadButton = new JButton("Load Image");
         JRadioButton animationToggle = new JRadioButton("Animation Toggle   Delay: ");
-        JSlider animationDelaySlider = new JSlider(0,10,500,100);
+        JSlider animationDelaySlider = new JSlider(0,1,500,100);
         JSlider mazeDensitySlider = new JSlider(100,GRID_SIZE * GRID_SIZE,mazeDensity);
+        JButton changeGridSizeButton = new JButton("Change Grid Size");
 
         startButton.addActionListener(e -> {
             Action startAlgorithmAction = getActionMap().get("startAlgorithm");
@@ -76,6 +77,7 @@ public class Main extends JPanel {
         animationToggle.addActionListener(e -> isAnimationToggled = animationToggle.isSelected());
         animationDelaySlider.addChangeListener(e -> animationDelay = animationDelaySlider.getValue());
         mazeDensitySlider.addChangeListener(e -> mazeDensity = mazeDensitySlider.getValue());
+        changeGridSizeButton.addActionListener(e -> updateGridSizeWithPopup(mazeDensitySlider));
 
         controlFrame.add(startButton);
         controlFrame.add(clearButton);
@@ -85,6 +87,7 @@ public class Main extends JPanel {
         controlFrame.add(animationToggle);
         controlFrame.add(animationDelaySlider);
         controlFrame.add(mazeDensitySlider);
+        controlFrame.add(changeGridSizeButton);
 
         controlFrame.pack();
         controlFrame.setVisible(true);
@@ -138,7 +141,84 @@ public class Main extends JPanel {
             }
         });
 
+        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_F, 0), "newGridSize");
+        getActionMap().put("newGridSize", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateGridSizeWithPopup(mazeDensitySlider);
+            }
+        });
+
     }
+
+    public void updateGridSizeWithPopup(JSlider mazeDensitySlider) {
+        JTextField gridSizeField = new JTextField(5);
+        JTextField buttonSizeField = new JTextField(5);
+
+        JPanel inputPanel = new JPanel();
+        inputPanel.add(new JLabel("New Grid Size:"));
+        inputPanel.add(gridSizeField);
+        inputPanel.add(Box.createHorizontalStrut(15));
+        inputPanel.add(new JLabel("New Button Size:"));
+        inputPanel.add(buttonSizeField);
+
+
+        int result = JOptionPane.showConfirmDialog(null, inputPanel, "Enter New Grid and Button Size", JOptionPane.OK_CANCEL_OPTION);
+
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                int newSize = Integer.parseInt(gridSizeField.getText());
+                int newButtonSize = Integer.parseInt(buttonSizeField.getText());
+
+                updateGridSize(newSize, newButtonSize, mazeDensitySlider);
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(null, "Please enter valid numbers.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    public void updateGridSize(int newSize, int buttonSize, JSlider mazeDensitySlider) {
+
+        GRID_SIZE = newSize;
+
+        mazeDensitySlider.setMaximum(GRID_SIZE * GRID_SIZE);
+
+        removeAll();
+        revalidate();
+        repaint();
+
+        setLayout(new GridLayout(GRID_SIZE, GRID_SIZE));
+        gridButtons = new JButton[GRID_SIZE][GRID_SIZE];
+        barriers.clear();
+
+        for (int row = 0; row < GRID_SIZE; row++) {
+            for (int col = 0; col < GRID_SIZE; col++) {
+                gridButtons[row][col] = new JButton();
+                gridButtons[row][col].setPreferredSize(new Dimension(buttonSize, buttonSize));
+                gridButtons[row][col].setBackground(Color.WHITE);
+                add(gridButtons[row][col]);
+
+                final int r = row;
+                final int c = col;
+                gridButtons[row][col].addActionListener(e -> handleButtonClick(r, c));
+                gridButtons[row][col].addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        if (SwingUtilities.isRightMouseButton(e)) {
+                            removeBarrier(r, c);
+                        }
+                    }
+                });
+            }
+        }
+
+        reset();
+
+        JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        frame.pack();
+    }
+
+
 
     public void loadImage(){
         JFileChooser fileChooser = new JFileChooser();
