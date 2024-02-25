@@ -64,6 +64,7 @@ public class Main extends JPanel {
         JSlider animationDelaySlider = new JSlider(0,1,500,100);
         JSlider mazeDensitySlider = new JSlider(100,GRID_SIZE * GRID_SIZE,mazeDensity);
         JButton changeGridSizeButton = new JButton("Change Grid Size");
+        JButton exitButton = new JButton("Exit");
 
         startButton.addActionListener(e -> {
             Action startAlgorithmAction = getActionMap().get("startAlgorithm");
@@ -78,6 +79,7 @@ public class Main extends JPanel {
         animationDelaySlider.addChangeListener(e -> animationDelay = animationDelaySlider.getValue());
         mazeDensitySlider.addChangeListener(e -> mazeDensity = mazeDensitySlider.getValue());
         changeGridSizeButton.addActionListener(e -> updateGridSizeWithPopup(mazeDensitySlider));
+        exitButton.addActionListener(e -> System.exit(0));
 
         controlFrame.add(startButton);
         controlFrame.add(clearButton);
@@ -88,6 +90,7 @@ public class Main extends JPanel {
         controlFrame.add(animationDelaySlider);
         controlFrame.add(mazeDensitySlider);
         controlFrame.add(changeGridSizeButton);
+        controlFrame.add(exitButton);
 
         controlFrame.pack();
         controlFrame.setVisible(true);
