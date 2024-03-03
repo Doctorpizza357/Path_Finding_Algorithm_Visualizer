@@ -22,6 +22,8 @@ public class Main extends JPanel {
 
     boolean isAnimationToggled;
 
+    boolean stopAnimation;
+
     public Main() {
         setLayout(new GridLayout(GRID_SIZE, GRID_SIZE));
         gridButtons = new JButton[GRID_SIZE][GRID_SIZE];
@@ -69,6 +71,7 @@ public class Main extends JPanel {
         startButton.addActionListener(e -> {
             Action startAlgorithmAction = getActionMap().get("startAlgorithm");
             startAlgorithmAction.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "startAlgorithm"));
+            stopAnimation = false;
         });
 
         clearButton.addActionListener(e -> reset());
@@ -240,6 +243,7 @@ public class Main extends JPanel {
 
     private void handleButtonClick(int row, int col) {
         if (start == null) {
+            stopAnimation = false;
             start = new Point(row, col);
             gridButtons[row][col].setBackground(Color.blue);
         } else if (end == null) {
@@ -420,6 +424,7 @@ public class Main extends JPanel {
     }
 
     private void visualizePathWithAnimation(List<Point> explorationPath, List<Point> fastestPath) {
+        stopAnimation = false;
         Timer timer = new Timer(animationDelay, null);
         timer.addActionListener(new ActionListener() {
             private int explorationIndex = 0;
@@ -427,13 +432,13 @@ public class Main extends JPanel {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (explorationIndex < explorationPath.size()) {
+                if (explorationIndex < explorationPath.size() && !stopAnimation) {
                     Point explorationPoint = explorationPath.get(explorationIndex);
                     if (!explorationPoint.equals(start) && !explorationPoint.equals(end)) {
                         gridButtons[explorationPoint.x][explorationPoint.y].setBackground(Color.YELLOW);
                     }
                     explorationIndex++;
-                } else if (fastestIndex < fastestPath.size()) {
+                } else if (fastestIndex < fastestPath.size() && !stopAnimation) {
                     Point fastestPoint = fastestPath.get(fastestIndex);
                     if (!fastestPoint.equals(start) && !fastestPoint.equals(end)) {
                         gridButtons[fastestPoint.x][fastestPoint.y].setBackground(Color.GREEN);
@@ -446,6 +451,9 @@ public class Main extends JPanel {
         });
         timer.start();
     }
+    private void stopAnimation() {
+        stopAnimation = true;
+    }
 
 
 
@@ -457,6 +465,7 @@ public class Main extends JPanel {
     }
 
     private void reset() {
+        stopAnimation();
         start = null;
         end = null;
         barriers.clear();
@@ -480,6 +489,7 @@ public class Main extends JPanel {
 
 
     private void generateRandomMaze() {
+        stopAnimation = true;
         start = null;
         end = null;
         barriers.clear();
