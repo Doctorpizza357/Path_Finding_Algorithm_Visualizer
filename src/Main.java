@@ -59,14 +59,14 @@ public class Main extends JPanel {
 
         JButton startButton = new JButton("Start Pathfinding");
         JButton clearButton = new JButton("Clear");
-        JButton mazeButton = new JButton("Generate Maze");
+        JButton GenMazePrimsButton = new JButton("Generate Maze Using Prims");
         JButton saveButton = new JButton("Save Image");
         JButton loadButton = new JButton("Load Image");
         JRadioButton animationToggle = new JRadioButton("Animation Toggle   Delay: ");
         JSlider animationDelaySlider = new JSlider(0,1,500,100);
         JSlider mazeDensitySlider = new JSlider(100,GRID_SIZE * GRID_SIZE,mazeDensity);
         JButton changeGridSizeButton = new JButton("Change Grid Size");
-        JButton exitButton = new JButton("Exit");
+        JButton GenMazeButton = new JButton("Generate Maze Using Density Slider");
 
         startButton.addActionListener(e -> {
             Action startAlgorithmAction = getActionMap().get("startAlgorithm");
@@ -75,25 +75,25 @@ public class Main extends JPanel {
         });
 
         clearButton.addActionListener(e -> reset());
-        mazeButton.addActionListener(e -> generateRandomMaze());
+        GenMazePrimsButton.addActionListener(e -> generateMazeUsingPrims());
+        GenMazeButton.addActionListener(e -> generateRandomMaze());
         saveButton.addActionListener(e -> takeGridScreenshot());
         loadButton.addActionListener(e -> loadImage());
         animationToggle.addActionListener(e -> isAnimationToggled = animationToggle.isSelected());
         animationDelaySlider.addChangeListener(e -> animationDelay = animationDelaySlider.getValue());
         mazeDensitySlider.addChangeListener(e -> mazeDensity = mazeDensitySlider.getValue());
         changeGridSizeButton.addActionListener(e -> updateGridSizeWithPopup(mazeDensitySlider));
-        exitButton.addActionListener(e -> System.exit(0));
 
         controlFrame.add(startButton);
         controlFrame.add(clearButton);
-        controlFrame.add(mazeButton);
+        controlFrame.add(GenMazePrimsButton);
         controlFrame.add(saveButton);
         controlFrame.add(loadButton);
         controlFrame.add(animationToggle);
         controlFrame.add(animationDelaySlider);
+        controlFrame.add(GenMazeButton);
         controlFrame.add(mazeDensitySlider);
         controlFrame.add(changeGridSizeButton);
-        controlFrame.add(exitButton);
 
         controlFrame.pack();
         controlFrame.setVisible(true);
@@ -127,7 +127,7 @@ public class Main extends JPanel {
         getActionMap().put("generateMaze", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                generateRandomMaze();
+                generateMazeUsingPrims();
             }
         });
 
@@ -520,6 +520,88 @@ public class Main extends JPanel {
             gridButtons[barrierX][barrierY].setBackground(Color.BLACK);
         }
     }
+
+    private void generateMazeUsingPrims() {
+        stopAnimation = true;
+        start = null;
+        end = null;
+        barriers.clear();
+        for (int row = 0; row < GRID_SIZE; row++) {
+            for (int col = 0; col < GRID_SIZE; col++) {
+                gridButtons[row][col].setBackground(Color.WHITE);
+            }
+        }
+        boolean[][] mazeGrid = new boolean[GRID_SIZE][GRID_SIZE];
+
+        for (int i = 0; i < GRID_SIZE; i++) {
+            for (int j = 0; j < GRID_SIZE; j++) {
+                mazeGrid[i][j] = true;
+            }
+        }
+
+        Random random = new Random();
+        start = new Point(random.nextInt(GRID_SIZE), random.nextInt(GRID_SIZE));
+        end = new Point(random.nextInt(GRID_SIZE), random.nextInt(GRID_SIZE));
+        gridButtons[end.x][end.y].setBackground(Color.RED);
+        gridButtons[start.x][start.y].setBackground(Color.BLUE);
+
+        mazeGrid[start.x][start.y] = false;
+
+        List<Point> walls = new ArrayList<>();
+        addNeighboringWalls(start.x, start.y, walls);
+
+        while (!walls.isEmpty()) {
+            int randomWallIndex = random.nextInt(walls.size());
+            Point wall = walls.get(randomWallIndex);
+
+            int x = wall.x;
+            int y = wall.y;
+            int[] dx = {0, 0, 1, -1};
+            int[] dy = {1, -1, 0, 0};
+            int openNeighborCount = 0;
+            for (int i = 0; i < 4; i++) {
+                int nx = x + dx[i];
+                int ny = y + dy[i];
+                if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE && !mazeGrid[nx][ny]) {
+                    openNeighborCount++;
+                }
+            }
+
+            if (openNeighborCount == 1) {
+                mazeGrid[x][y] = false;
+                addNeighboringWalls(x, y, walls);
+            }
+            walls.remove(randomWallIndex);
+        }
+
+        for (int i = 0; i < GRID_SIZE; i++) {
+            for (int j = 0; j < GRID_SIZE; j++) {
+                if (mazeGrid[i][j] && !new Point(i,j).equals(start) && !new Point(i,j).equals(end) ) {
+                    gridButtons[i][j].setBackground(Color.BLACK);
+                    barriers.add(new Point(i,j));
+                } else {
+                    Point check = new Point(i, j);
+                    if (!check.equals(start) && !check.equals(end)) {
+                        gridButtons[i][j].setBackground(Color.WHITE);
+                    }
+                }
+            }
+        }
+    }
+
+    private void addNeighboringWalls(int x, int y, List<Point> walls) {
+        int[] dx = {0, 0, 1, -1};
+        int[] dy = {1, -1, 0, 0};
+        for (int i = 0; i < 4; i++) {
+            int nx = x + dx[i];
+            int ny = y + dy[i];
+            if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE) {
+                walls.add(new Point(nx, ny));
+            }
+        }
+    }
+
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
