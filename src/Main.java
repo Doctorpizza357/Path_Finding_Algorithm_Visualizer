@@ -53,20 +53,19 @@ public class Main extends JPanel {
         JFrame controlFrame = new JFrame("Controls");
         controlFrame.setAlwaysOnTop(true);
         controlFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        controlFrame.setLayout(new GridLayout(2,5));
+        controlFrame.setLayout(new BoxLayout(controlFrame.getContentPane(), BoxLayout.Y_AXIS));
         controlFrame.setResizable(false);
 
-
         JButton startButton = new JButton("Start Pathfinding");
-        JButton clearButton = new JButton("Clear");
-        JButton GenMazePrimsButton = new JButton("Generate Maze Using Prims");
+        JButton clearButton = new JButton("Clear Grid");
+        JButton GenMazePrimsButton = new JButton("Generate Maze (Prims)");
         JButton saveButton = new JButton("Save Image");
         JButton loadButton = new JButton("Load Image");
-        JRadioButton animationToggle = new JRadioButton("Animation Toggle   Delay: ");
-        JSlider animationDelaySlider = new JSlider(0,1,500,100);
-        JSlider mazeDensitySlider = new JSlider(100,GRID_SIZE * GRID_SIZE,mazeDensity);
+        JRadioButton animationToggle = new JRadioButton("Enable Animation");
+        JSlider animationDelaySlider = new JSlider(0, 500, 100);
+        JSlider mazeDensitySlider = new JSlider(100, GRID_SIZE * GRID_SIZE, mazeDensity);
         JButton changeGridSizeButton = new JButton("Change Grid Size");
-        JButton GenMazeButton = new JButton("Generate Maze Using Density Slider");
+        JButton GenMazeButton = new JButton("Generate Maze (Density)");
 
         startButton.addActionListener(e -> {
             Action startAlgorithmAction = getActionMap().get("startAlgorithm");
@@ -84,16 +83,31 @@ public class Main extends JPanel {
         mazeDensitySlider.addChangeListener(e -> mazeDensity = mazeDensitySlider.getValue());
         changeGridSizeButton.addActionListener(e -> updateGridSizeWithPopup(mazeDensitySlider));
 
-        controlFrame.add(startButton);
-        controlFrame.add(clearButton);
-        controlFrame.add(GenMazePrimsButton);
-        controlFrame.add(saveButton);
-        controlFrame.add(loadButton);
-        controlFrame.add(animationToggle);
-        controlFrame.add(animationDelaySlider);
-        controlFrame.add(GenMazeButton);
-        controlFrame.add(mazeDensitySlider);
-        controlFrame.add(changeGridSizeButton);
+        JPanel pathfindingPanel = createPanelWithComponents(startButton, clearButton);
+        JPanel filePanel = createPanelWithComponents(saveButton, loadButton);
+
+        JPanel mazePrimsPanel = createPanelWithComponents(GenMazePrimsButton);
+        JPanel mazeDensityPanel = new JPanel(new BorderLayout());
+        mazeDensityPanel.add(GenMazeButton, BorderLayout.WEST);
+        mazeDensityPanel.add(mazeDensitySlider, BorderLayout.CENTER);
+
+        JPanel animationPanel = new JPanel(new BorderLayout());
+        animationPanel.add(animationToggle, BorderLayout.WEST);
+        animationPanel.add(animationDelaySlider, BorderLayout.CENTER);
+
+        JPanel gridSizePanel = createPanelWithComponents(changeGridSizeButton);
+
+        controlFrame.add(createSectionPanel("Pathfinding Controls", pathfindingPanel));
+        controlFrame.add(Box.createVerticalStrut(10));
+        controlFrame.add(createSectionPanel("File Operations", filePanel));
+        controlFrame.add(Box.createVerticalStrut(10));
+        controlFrame.add(createSectionPanel("Maze Generation",
+                mazePrimsPanel,
+                mazeDensityPanel));
+        controlFrame.add(Box.createVerticalStrut(10));
+        controlFrame.add(createSectionPanel("Animation Settings", animationPanel));
+        controlFrame.add(Box.createVerticalStrut(10));
+        controlFrame.add(createSectionPanel("Grid Configuration", gridSizePanel));
 
         controlFrame.pack();
         controlFrame.setVisible(true);
@@ -155,6 +169,26 @@ public class Main extends JPanel {
             }
         });
 
+    }
+
+    private JPanel createPanelWithComponents(JComponent... components) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        for (JComponent comp : components) {
+            panel.add(comp);
+        }
+        return panel;
+    }
+
+    private JPanel createSectionPanel(String title, JComponent... components) {
+        JPanel sectionPanel = new JPanel();
+        sectionPanel.setLayout(new BoxLayout(sectionPanel, BoxLayout.Y_AXIS));
+        sectionPanel.setBorder(BorderFactory.createTitledBorder(title));
+
+        for (JComponent comp : components) {
+            comp.setAlignmentX(Component.LEFT_ALIGNMENT);
+            sectionPanel.add(comp);
+        }
+        return sectionPanel;
     }
 
     public void updateGridSizeWithPopup(JSlider mazeDensitySlider) {
