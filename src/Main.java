@@ -24,6 +24,17 @@ public class Main extends JPanel {
 
     boolean stopAnimation;
 
+    private JLabel pathLengthLabel;
+    private JLabel nodesExploredLabel;
+    private JLabel timeTakenLabel;
+    private JLabel algorithmLabel;
+    private JLabel heuristicLabel;
+    private JLabel gridStatsLabel;
+    private JLabel statusMessageLabel;
+
+    JProgressBar complexityBar = new JProgressBar(0, 100);
+    JProgressBar efficiencyBar = new JProgressBar(0, 100);
+
     public Main() {
         setLayout(new GridLayout(GRID_SIZE, GRID_SIZE));
         gridButtons = new JButton[GRID_SIZE][GRID_SIZE];
@@ -109,6 +120,14 @@ public class Main extends JPanel {
         controlFrame.add(Box.createVerticalStrut(10));
         controlFrame.add(createSectionPanel("Grid Configuration", gridSizePanel));
 
+        controlFrame.add(Box.createVerticalStrut(10));
+        controlFrame.add(createStatusPanel());
+        controlFrame.add(createLegendPanel(), BorderLayout.CENTER);
+        controlFrame.add(createComplexityPanel());
+        controlFrame.pack();
+
+
+
         controlFrame.pack();
         controlFrame.setVisible(true);
 
@@ -117,12 +136,45 @@ public class Main extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (start != null && end != null) {
+                    long startTime = System.currentTimeMillis();
                     List<List<Point>> paths = aStarPathfinding();
+                    long elapsedTime = System.currentTimeMillis() - startTime;
+                    int totalNodes = GRID_SIZE * GRID_SIZE;
+
+                    if (paths.get(1).isEmpty()) {
+                        updateComplexityIndicators(0, 0);
+                        updatePathMetrics(0, paths.get(0).size(), elapsedTime);
+                        showStatusMessage("No path exists!", Color.RED);
+                        return;
+                    }
+
+                    // Calculate metrics
+                    int optimality = calculateOptimality(paths.get(1));
+                    int efficiency = calculateEfficiency(paths.get(0).size(), totalNodes);
+
                     if (!isAnimationToggled) {
                         visualizePath(paths.get(1));
-                    }else {
-                        visualizePathWithAnimation(paths.get(0), paths.get(1));
+                        updatePathMetrics(
+                                paths.get(1).size() - 1,
+                                paths.get(0).size(),
+                                elapsedTime
+                        );
+                        updateComplexityIndicators(optimality, efficiency);
+                        showStatusMessage("Path found!", Color.GREEN);
+                    } else {
+                        visualizePathWithAnimation(paths.get(0), paths.get(1), () -> {
+                            updatePathMetrics(
+                                    paths.get(1).size() - 1,
+                                    paths.get(0).size(),
+                                    elapsedTime
+                            );
+                            updateComplexityIndicators(optimality, efficiency);
+                            showStatusMessage("Path found!", Color.GREEN);
+                        });
                     }
+                    updateGridStats();
+                } else {
+                    showStatusMessage("Set both start and end points first!", Color.ORANGE);
                 }
             }
         });
@@ -179,6 +231,27 @@ public class Main extends JPanel {
         return panel;
     }
 
+    private JPanel createComplexityPanel() {
+        JPanel panel = new JPanel(new GridLayout(2, 1));
+        panel.setBorder(BorderFactory.createTitledBorder("Path Analysis"));
+
+        complexityBar.setStringPainted(true);
+        complexityBar.setString("Optimality");
+
+        efficiencyBar.setStringPainted(true);
+        efficiencyBar.setString("Efficiency");
+
+        panel.add(complexityBar);
+        panel.add(efficiencyBar);
+
+        return panel;
+    }
+
+    private void updateComplexityIndicators(int optimality, int efficiency) {
+        complexityBar.setValue(optimality);
+        efficiencyBar.setValue(efficiency);
+    }
+
     private JPanel createSectionPanel(String title, JComponent... components) {
         JPanel sectionPanel = new JPanel();
         sectionPanel.setLayout(new BoxLayout(sectionPanel, BoxLayout.Y_AXIS));
@@ -189,6 +262,78 @@ public class Main extends JPanel {
             sectionPanel.add(comp);
         }
         return sectionPanel;
+    }
+
+    private JPanel createStatusPanel() {
+
+
+        JPanel statusPanel = new JPanel();
+        statusPanel.setLayout(new BoxLayout(statusPanel, BoxLayout.Y_AXIS));
+        statusPanel.setBorder(BorderFactory.createTitledBorder("Status Dashboard"));
+
+        // Initialize labels with monospaced font for alignment
+        Font statusFont = new Font(Font.MONOSPACED, Font.PLAIN, 12);
+
+        pathLengthLabel = createStatusLabel("Path Length: -", statusFont);
+        nodesExploredLabel = createStatusLabel("Nodes Explored: -", statusFont);
+        timeTakenLabel = createStatusLabel("Time Taken: -", statusFont);
+        algorithmLabel = createStatusLabel("Algorithm: A*", statusFont);
+        heuristicLabel = createStatusLabel("Heuristic: Euclidean", statusFont);
+        gridStatsLabel = createStatusLabel(String.format("Grid: %dx%d (0 barriers)", GRID_SIZE, GRID_SIZE), statusFont);
+        statusMessageLabel = createStatusLabel("Ready", new Font(Font.SANS_SERIF, Font.BOLD, 12));
+        statusMessageLabel.setForeground(Color.BLUE);
+
+        // Add components to panel
+        statusPanel.add(createStatusRow(pathLengthLabel, nodesExploredLabel));
+        statusPanel.add(createStatusRow(timeTakenLabel, algorithmLabel));
+        statusPanel.add(createStatusRow(heuristicLabel, gridStatsLabel));
+        statusPanel.add(Box.createVerticalStrut(5));
+        statusPanel.add(createCenteredLabel(statusMessageLabel));
+
+        return statusPanel;
+    }
+
+    private JLabel createStatusLabel(String text, Font font) {
+        JLabel label = new JLabel(text);
+        label.setFont(font);
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return label;
+    }
+
+    private JPanel createStatusRow(JComponent left, JComponent right) {
+        JPanel row = new JPanel(new BorderLayout());
+        row.add(left, BorderLayout.WEST);
+        row.add(right, BorderLayout.EAST);
+        row.setMaximumSize(new Dimension(Short.MAX_VALUE, 20));
+        return row;
+    }
+
+    private JPanel createCenteredLabel(JLabel label) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        panel.add(label);
+        return panel;
+    }
+
+    public void updatePathMetrics(int length, int explored, long timeMs) {
+        pathLengthLabel.setText(String.format("Path Length: %d", length));
+        nodesExploredLabel.setText(String.format("Nodes Explored: %d", explored));
+        timeTakenLabel.setText(String.format("Time Taken: %d ms", timeMs));
+    }
+
+    public void updateGridStats() {
+        gridStatsLabel.setText(String.format("Grid: %dx%d (%d barriers)",
+                GRID_SIZE, GRID_SIZE, barriers.size()));
+    }
+
+    public void showStatusMessage(String message, Color color) {
+        statusMessageLabel.setText(message);
+        statusMessageLabel.setForeground(color);
+
+        // Clear message after 3 seconds
+        new Timer(3000, e -> {
+            statusMessageLabel.setText("Ready");
+            statusMessageLabel.setForeground(Color.BLUE);
+        }).start();
     }
 
     public void updateGridSizeWithPopup(JSlider mazeDensitySlider) {
@@ -256,6 +401,9 @@ public class Main extends JPanel {
 
         JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
         frame.pack();
+
+        reset();
+        showStatusMessage("Grid size updated", Color.BLUE);
     }
 
 
@@ -284,12 +432,16 @@ public class Main extends JPanel {
             end = new Point(row, col);
             gridButtons[row][col].setBackground(Color.RED);
             List<List<Point>> paths = aStarPathfinding();
+            int optimality = calculateOptimality(paths.get(1));
+            int efficiency = calculateEfficiency(paths.get(0).size(), GRID_SIZE*GRID_SIZE);
+            updateComplexityIndicators(optimality, efficiency);
             if (!isAnimationToggled) {
                 visualizePath(paths.get(1));
             }
         }else {
             addBarrier(row, col);
         }
+
     }
 
     private void addBarrier(int row, int col) {
@@ -301,8 +453,15 @@ public class Main extends JPanel {
             if (!isAnimationToggled) {
                 List<List<Point>> paths = aStarPathfinding();
                 visualizePath(paths.get(1));
+                int optimality = calculateOptimality(paths.get(1));
+                int efficiency = calculateEfficiency(paths.get(0).size(), GRID_SIZE*GRID_SIZE);
+                updateComplexityIndicators(optimality, efficiency);
+
+
             }
         }
+
+        updateGridStats();
     }
 
     private void removeBarrier(int row, int col) {
@@ -314,8 +473,13 @@ public class Main extends JPanel {
             if (!isAnimationToggled) {
                 List<List<Point>> paths = aStarPathfinding();
                 visualizePath(paths.get(1));
+                int optimality = calculateOptimality(paths.get(1));
+                int efficiency = calculateEfficiency(paths.get(0).size(), GRID_SIZE*GRID_SIZE);
+                updateComplexityIndicators(optimality, efficiency);
             }
         }
+
+        updateGridStats();
     }
 
     public void loadMazeFromScreenshot(String filePath) {
@@ -431,6 +595,23 @@ public class Main extends JPanel {
         return Arrays.asList(explorationPath, fastestPath);
     }
 
+    private int calculateOptimality(List<Point> fastestPath) {
+        if (fastestPath.isEmpty()) return 0;
+
+        // Compare actual path length to theoretical minimum (Manhattan distance)
+        int actualLength = fastestPath.size() - 1; // Subtract start node
+        int theoreticalMin = Math.abs(start.x - end.x) + Math.abs(start.y - end.y);
+
+        return theoreticalMin > 0
+                ? (int) ((double) theoreticalMin / actualLength * 100)
+                : 100;
+    }
+
+    private int calculateEfficiency(int exploredNodes, int totalNodes) {
+        double explorationRatio = (double) exploredNodes / totalNodes;
+        return 100 - (int) (explorationRatio * 100);
+    }
+
 
     private List<Point> reconstructPath(Node current) {
         List<Point> path = new ArrayList<>();
@@ -457,7 +638,9 @@ public class Main extends JPanel {
         }
     }
 
-    private void visualizePathWithAnimation(List<Point> explorationPath, List<Point> fastestPath) {
+    private void visualizePathWithAnimation(List<Point> explorationPath,
+                                            List<Point> fastestPath,
+                                            Runnable completionCallback) {
         stopAnimation = false;
         Timer timer = new Timer(animationDelay, null);
         timer.addActionListener(new ActionListener() {
@@ -466,20 +649,29 @@ public class Main extends JPanel {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (explorationIndex < explorationPath.size() && !stopAnimation) {
-                    Point explorationPoint = explorationPath.get(explorationIndex);
-                    if (!explorationPoint.equals(start) && !explorationPoint.equals(end)) {
-                        gridButtons[explorationPoint.x][explorationPoint.y].setBackground(Color.YELLOW);
+                if (stopAnimation) {
+                    timer.stop();
+                    if (completionCallback != null) completionCallback.run();
+                    return;
+                }
+
+                if (explorationIndex < explorationPath.size()) {
+                    Point p = explorationPath.get(explorationIndex);
+                    if (!p.equals(start) && !p.equals(end)) {
+                        gridButtons[p.x][p.y].setBackground(Color.YELLOW);
                     }
                     explorationIndex++;
-                } else if (fastestIndex < fastestPath.size() && !stopAnimation) {
-                    Point fastestPoint = fastestPath.get(fastestIndex);
-                    if (!fastestPoint.equals(start) && !fastestPoint.equals(end)) {
-                        gridButtons[fastestPoint.x][fastestPoint.y].setBackground(Color.GREEN);
+                }
+                else if (fastestIndex < fastestPath.size()) {
+                    Point p = fastestPath.get(fastestIndex);
+                    if (!p.equals(start) && !p.equals(end)) {
+                        gridButtons[p.x][p.y].setBackground(Color.GREEN);
                     }
                     fastestIndex++;
-                } else {
+                }
+                else {
                     timer.stop();
+                    if (completionCallback != null) completionCallback.run();
                 }
             }
         });
@@ -487,6 +679,30 @@ public class Main extends JPanel {
     }
     private void stopAnimation() {
         stopAnimation = true;
+    }
+
+    private JPanel createLegendPanel() {
+        JPanel legendPanel = new JPanel();
+        legendPanel.setLayout(new BoxLayout(legendPanel, BoxLayout.Y_AXIS));
+        legendPanel.setBorder(BorderFactory.createTitledBorder("Legend"));
+
+        addLegendItem(legendPanel, Color.BLUE, "Start Point");
+        addLegendItem(legendPanel, Color.RED, "End Point");
+        addLegendItem(legendPanel, Color.BLACK, "Barrier");
+        addLegendItem(legendPanel, Color.GREEN, "Final Path");
+        addLegendItem(legendPanel, Color.YELLOW, "Explored Area");
+
+        return legendPanel;
+    }
+
+    private void addLegendItem(JPanel panel, Color color, String text) {
+        JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JLabel colorLabel = new JLabel("   ");
+        colorLabel.setOpaque(true);
+        colorLabel.setBackground(color);
+        item.add(colorLabel);
+        item.add(new JLabel(text));
+        panel.add(item);
     }
 
 
@@ -508,6 +724,10 @@ public class Main extends JPanel {
                 gridButtons[row][col].setBackground(Color.WHITE);
             }
         }
+        updatePathMetrics(0, 0, 0); // Reset metrics
+        updateGridStats(); // Reset barrier count
+        showStatusMessage("Grid cleared", Color.BLUE);
+        updateComplexityIndicators(0, 0);
     }
 
     private void clearPath() {
@@ -553,6 +773,9 @@ public class Main extends JPanel {
             barriers.add(new Point(barrierX, barrierY));
             gridButtons[barrierX][barrierY].setBackground(Color.BLACK);
         }
+
+        updateGridStats();
+        showStatusMessage("Maze generated (Density)", new Color(0, 100, 0));
     }
 
     private void generateMazeUsingPrims() {
@@ -621,6 +844,8 @@ public class Main extends JPanel {
                 }
             }
         }
+        updateGridStats();
+        showStatusMessage("Prim's Maze generated", new Color(0, 100, 0));
     }
 
     private void addNeighboringWalls(int x, int y, List<Point> walls) {
