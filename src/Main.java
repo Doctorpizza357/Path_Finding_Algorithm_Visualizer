@@ -35,6 +35,10 @@ public class Main extends JPanel {
     JProgressBar complexityBar = new JProgressBar(0, 100);
     JProgressBar efficiencyBar = new JProgressBar(0, 100);
 
+    JPanel complexityPanel;
+    JPanel legendPanel;
+    JPanel statusPanel;
+
     public Main() {
         setLayout(new GridLayout(GRID_SIZE, GRID_SIZE));
         gridButtons = new JButton[GRID_SIZE][GRID_SIZE];
@@ -78,6 +82,11 @@ public class Main extends JPanel {
         JButton changeGridSizeButton = new JButton("Change Grid Size");
         JButton GenMazeButton = new JButton("Generate Maze (Density)");
 
+        JRadioButton statusToggle= new JRadioButton("Enable Status Dashboard");
+        JRadioButton complexityToggle = new JRadioButton("Enable Complexity Indicators");
+        JRadioButton legendToggle = new JRadioButton("Enable Legends");
+
+
         startButton.addActionListener(e -> {
             Action startAlgorithmAction = getActionMap().get("startAlgorithm");
             startAlgorithmAction.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "startAlgorithm"));
@@ -93,6 +102,38 @@ public class Main extends JPanel {
         animationDelaySlider.addChangeListener(e -> animationDelay = animationDelaySlider.getValue());
         mazeDensitySlider.addChangeListener(e -> mazeDensity = mazeDensitySlider.getValue());
         changeGridSizeButton.addActionListener(e -> updateGridSizeWithPopup(mazeDensitySlider));
+
+        statusToggle.addActionListener( e -> {
+            if(statusToggle.isSelected()){
+                statusPanel.setVisible(true);
+                controlFrame.pack();
+            }else{
+                statusPanel.setVisible(false);
+                controlFrame.pack();
+            }
+        });
+
+        complexityToggle.addActionListener( e -> {
+            if(complexityToggle.isSelected()){
+                complexityPanel.setVisible(true);
+                controlFrame.pack();
+            }else{
+                complexityPanel.setVisible(false);
+                controlFrame.pack();
+            }
+        });
+
+        legendToggle.addActionListener( e -> {
+            if(legendToggle.isSelected()){
+                legendPanel.setVisible(true);
+                controlFrame.pack();
+            }else{
+                legendPanel.setVisible(false);
+                controlFrame.pack();
+            }
+        });
+
+
 
         JPanel pathfindingPanel = createPanelWithComponents(startButton, clearButton);
         JPanel filePanel = createPanelWithComponents(saveButton, loadButton);
@@ -119,6 +160,9 @@ public class Main extends JPanel {
         controlFrame.add(createSectionPanel("Animation Settings", animationPanel));
         controlFrame.add(Box.createVerticalStrut(10));
         controlFrame.add(createSectionPanel("Grid Configuration", gridSizePanel));
+        controlFrame.add(Box.createVerticalStrut(10));
+        controlFrame.add(createSectionPanel("Features", statusToggle, complexityToggle, legendToggle));
+
 
         controlFrame.add(Box.createVerticalStrut(10));
         controlFrame.add(createStatusPanel());
@@ -126,7 +170,9 @@ public class Main extends JPanel {
         controlFrame.add(createComplexityPanel());
         controlFrame.pack();
 
-
+        statusPanel.setVisible(false);
+        complexityPanel.setVisible(false);
+        legendPanel.setVisible(false);
 
         controlFrame.pack();
         controlFrame.setVisible(true);
@@ -232,8 +278,8 @@ public class Main extends JPanel {
     }
 
     private JPanel createComplexityPanel() {
-        JPanel panel = new JPanel(new GridLayout(2, 1));
-        panel.setBorder(BorderFactory.createTitledBorder("Path Analysis"));
+        complexityPanel = new JPanel(new GridLayout(2, 1));
+        complexityPanel.setBorder(BorderFactory.createTitledBorder("Path Analysis"));
 
         complexityBar.setStringPainted(true);
         complexityBar.setString("Optimality");
@@ -241,10 +287,10 @@ public class Main extends JPanel {
         efficiencyBar.setStringPainted(true);
         efficiencyBar.setString("Efficiency");
 
-        panel.add(complexityBar);
-        panel.add(efficiencyBar);
+        complexityPanel.add(complexityBar);
+        complexityPanel.add(efficiencyBar);
 
-        return panel;
+        return complexityPanel;
     }
 
     private void updateComplexityIndicators(int optimality, int efficiency) {
@@ -267,7 +313,7 @@ public class Main extends JPanel {
     private JPanel createStatusPanel() {
 
 
-        JPanel statusPanel = new JPanel();
+        statusPanel = new JPanel();
         statusPanel.setLayout(new BoxLayout(statusPanel, BoxLayout.Y_AXIS));
         statusPanel.setBorder(BorderFactory.createTitledBorder("Status Dashboard"));
 
@@ -682,7 +728,7 @@ public class Main extends JPanel {
     }
 
     private JPanel createLegendPanel() {
-        JPanel legendPanel = new JPanel();
+        legendPanel = new JPanel();
         legendPanel.setLayout(new BoxLayout(legendPanel, BoxLayout.Y_AXIS));
         legendPanel.setBorder(BorderFactory.createTitledBorder("Legend"));
 
