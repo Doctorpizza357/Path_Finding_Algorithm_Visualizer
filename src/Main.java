@@ -1,13 +1,13 @@
+import javax.imageio.ImageIO;
+import javax.swing.Timer;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.IOException;
-import java.util.*;
-import java.util.List;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import javax.swing.Timer;
-import javax.imageio.ImageIO;
+import java.io.IOException;
+import java.util.List;
+import java.util.*;
 
 public class Main extends JPanel {
     private static int GRID_SIZE = 30;
@@ -382,36 +382,67 @@ public class Main extends JPanel {
         }).start();
     }
 
+    private boolean isGridSizeViable(int newSize, int buttonSize) {
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        int totalWidth = newSize * buttonSize;
+        int totalHeight = newSize * buttonSize;
+
+        int margin = 100;
+        return totalWidth <= screenSize.width - margin && totalHeight <= screenSize.height - margin;
+    }
+
     public void updateGridSizeWithPopup(JSlider mazeDensitySlider) {
         JTextField gridSizeField = new JTextField(5);
-        JTextField buttonSizeField = new JTextField(5);
 
         JPanel inputPanel = new JPanel();
         inputPanel.add(new JLabel("New Grid Size:"));
         inputPanel.add(gridSizeField);
-        inputPanel.add(Box.createHorizontalStrut(15));
-        inputPanel.add(new JLabel("New Button Size:"));
-        inputPanel.add(buttonSizeField);
 
-
-        int result = JOptionPane.showConfirmDialog(null, inputPanel, "Enter New Grid and Button Size", JOptionPane.OK_CANCEL_OPTION);
+        int result = JOptionPane.showConfirmDialog(null, inputPanel,
+                "Enter New Grid Size", JOptionPane.OK_CANCEL_OPTION);
 
         if (result == JOptionPane.OK_OPTION) {
             try {
                 int newSize = Integer.parseInt(gridSizeField.getText());
-                int newButtonSize = Integer.parseInt(buttonSizeField.getText());
+                if (newSize <= 0) {
+                    JOptionPane.showMessageDialog(null,
+                            "Grid size must be positive.",
+                            "Invalid Input",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
 
-                updateGridSize(newSize, newButtonSize, mazeDensitySlider);
+                Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+                int maxGridDimension = Math.min(screenSize.height, screenSize.width) - 100;
+                int buttonSize = maxGridDimension / newSize;
+
+                // Ensure minimum button size
+                if (buttonSize < 10) {
+                    buttonSize = 10;
+                }
+
+                if (!isGridSizeViable(newSize, buttonSize)) {
+                    int confirmResult = JOptionPane.showConfirmDialog(null,
+                            "The grid might not fit on your screen. Continue anyway?",
+                            "Size Warning",
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.WARNING_MESSAGE);
+
+                    if (confirmResult != JOptionPane.YES_OPTION) {
+                        return;
+                    }
+                }
+
+                updateGridSize(newSize, buttonSize, mazeDensitySlider);
             } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(null, "Please enter valid numbers.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(null,
+                        "Please Invalid Input");
             }
         }
     }
 
     public void updateGridSize(int newSize, int buttonSize, JSlider mazeDensitySlider) {
-
         GRID_SIZE = newSize;
-
         mazeDensitySlider.setMaximum(GRID_SIZE * GRID_SIZE);
 
         removeAll();
@@ -448,8 +479,10 @@ public class Main extends JPanel {
         JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
         frame.pack();
 
+        frame.setLocationRelativeTo(null);
+
         reset();
-        showStatusMessage("Grid size updated", Color.BLUE);
+        showStatusMessage("Grid size updated to " + GRID_SIZE + "x" + GRID_SIZE, Color.BLUE);
     }
 
 
