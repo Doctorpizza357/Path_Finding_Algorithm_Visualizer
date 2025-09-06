@@ -3,9 +3,12 @@ package controller;
 import algorithm.PathFinder;
 import maze.MazeGenerator;
 import ui.AnalysisPanel;
+import ui.InteractionMode;
+import ui.InteractionToolbar;
 import ui.LegendPanel;
 import ui.StatusPanel;
 import util.GridUtils;
+import util.ZoomHandler;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -23,6 +26,7 @@ import java.util.List;
 public class PathFinderController extends JPanel {
     // Grid properties
     private int gridSize = 30;
+    private int cellSize = 30; // Size of each grid cell to maintain square shape
     private JButton[][] gridButtons;
     private Point start;
     private Point end;
@@ -40,6 +44,16 @@ public class PathFinderController extends JPanel {
     private StatusPanel statusPanel;
     private AnalysisPanel analysisPanel;
     private LegendPanel legendPanel;
+    private InteractionToolbar toolbar;
+    private JScrollPane gridScrollPane;
+    private JPanel gridPanel;
+    private JLabel zoomLabel;
+    
+    // Interaction properties
+    private InteractionMode currentMode = InteractionMode.PLACE_START;
+    private Point dragSource = null;
+    private boolean isDragging = false;
+    private boolean barrierDragMode = false; // true = add, false = remove
     
     // Algorithm components
     private PathFinder pathFinder;
@@ -49,7 +63,16 @@ public class PathFinderController extends JPanel {
      * Creates a new PathFinderController with the default grid size.
      */
     public PathFinderController() {
+        setLayout(new BorderLayout());
         mazeDensity = gridSize * gridSize / 4;
+        
+        // Create main components
+        gridPanel = new JPanel(new GridLayout(gridSize, gridSize));
+        gridScrollPane = new JScrollPane(gridPanel);
+        
+        // Set up zoom handler
+        ZoomHandler zoomHandler = new ZoomHandler(gridPanel, gridScrollPane);
+        gridScrollPane.addMouseWheelListener(zoomHandler);
         
         // Initialize the grid
         initializeGrid();
@@ -57,6 +80,19 @@ public class PathFinderController extends JPanel {
         // Initialize algorithm components
         pathFinder = new PathFinder(gridSize, barriers);
         mazeGenerator = new MazeGenerator(gridSize);
+        
+        // Create zoom indicator
+        zoomLabel = new JLabel("Zoom: 100%");
+        JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        statusBar.add(zoomLabel);
+        
+        // Create interaction toolbar
+        toolbar = new InteractionToolbar(this::setInteractionMode);
+        
+        // Add components to main panel
+        add(toolbar, BorderLayout.NORTH);
+        add(gridScrollPane, BorderLayout.CENTER);
+        add(statusBar, BorderLayout.SOUTH);
         
         // Create and display the control panel
         createControlPanel();
@@ -69,29 +105,287 @@ public class PathFinderController extends JPanel {
      * Initializes the grid with buttons.
      */
     private void initializeGrid() {
-        setLayout(new GridLayout(gridSize, gridSize));
+        gridPanel.removeAll();
+        gridPanel.setLayout(new GridLayout(gridSize, gridSize));
         gridButtons = new JButton[gridSize][gridSize];
         
+        // Calculate cell size to maintain square cells
         for (int row = 0; row < gridSize; row++) {
             for (int col = 0; col < gridSize; col++) {
                 gridButtons[row][col] = new JButton();
-                gridButtons[row][col].setPreferredSize(new Dimension(30, 30));
+                gridButtons[row][col].setPreferredSize(new Dimension(cellSize, cellSize));
+                gridButtons[row][col].setMinimumSize(new Dimension(cellSize, cellSize));
+                gridButtons[row][col].setMaximumSize(new Dimension(cellSize, cellSize));
                 gridButtons[row][col].setBackground(Color.WHITE);
-                add(gridButtons[row][col]);
+                gridButtons[row][col].setBorderPainted(false);
+                gridPanel.add(gridButtons[row][col]);
                 
                 final int r = row;
                 final int c = col;
-                gridButtons[row][col].addActionListener(e -> handleButtonClick(r, c));
+                
+                // Add mouse listeners for click, drag, and move operations
                 gridButtons[row][col].addMouseListener(new MouseAdapter() {
                     @Override
-                    public void mouseClicked(MouseEvent e) {
-                        if (SwingUtilities.isRightMouseButton(e)) {
-                            removeBarrier(r, c);
+                    public void mousePressed(MouseEvent e) {
+                        handleMousePressed(r, c, e);
+                    }
+                    
+                    @Override
+                    public void mouseReleased(MouseEvent e) {
+                        handleMouseReleased();
+                    }
+                    
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        if (isDragging) {
+                            handleMouseDrag(r, c);
                         }
                     }
                 });
             }
         }
+    }
+    
+    /**
+     * Sets the current interaction mode.
+     * 
+     * @param mode The new interaction mode
+     */
+    private void setInteractionMode(InteractionMode mode) {
+        this.currentMode = mode;
+        
+        // If switching to start or end mode and we already have those points,
+        // switch to move mode
+        if (mode == InteractionMode.PLACE_START && start != null) {
+            toolbar.setMode(InteractionMode.MOVE);
+        } else if (mode == InteractionMode.PLACE_END && end != null) {
+            toolbar.setMode(InteractionMode.MOVE);
+        }
+        
+        // Update cursor based on mode
+        updateCursor();
+        
+        // Update status message
+        switch (mode) {
+            case PLACE_START:
+                statusPanel.showStatusMessage("Click to place start point", Color.BLUE);
+                break;
+            case PLACE_END:
+                statusPanel.showStatusMessage("Click to place end point", Color.RED);
+                break;
+            case ADD_BARRIERS:
+                statusPanel.showStatusMessage("Click or drag to add barriers", Color.BLACK);
+                break;
+            case REMOVE_BARRIERS:
+                statusPanel.showStatusMessage("Click or drag to remove barriers", Color.ORANGE);
+                break;
+            case MOVE:
+                statusPanel.showStatusMessage("Drag to move start/end points", Color.MAGENTA);
+                break;
+        }
+    }
+    
+    /**
+     * Updates the cursor based on the current interaction mode.
+     */
+    private void updateCursor() {
+        Cursor cursor;
+        
+        switch (currentMode) {
+            case PLACE_START:
+            case PLACE_END:
+                cursor = new Cursor(Cursor.CROSSHAIR_CURSOR);
+                break;
+            case ADD_BARRIERS:
+                cursor = new Cursor(Cursor.HAND_CURSOR);
+                break;
+            case REMOVE_BARRIERS:
+                cursor = new Cursor(Cursor.HAND_CURSOR);
+                break;
+            case MOVE:
+                cursor = new Cursor(Cursor.MOVE_CURSOR);
+                break;
+            default:
+                cursor = new Cursor(Cursor.DEFAULT_CURSOR);
+                break;
+        }
+        
+        gridPanel.setCursor(cursor);
+    }
+    
+    /**
+     * Handles mouse press events on grid buttons.
+     * 
+     * @param row Row index
+     * @param col Column index
+     * @param e Mouse event
+     */
+    private void handleMousePressed(int row, int col, MouseEvent e) {
+        Point clickPoint = new Point(row, col);
+        
+        switch (currentMode) {
+            case PLACE_START:
+                if (start != null) {
+                    // Clear existing start
+                    gridButtons[start.x][start.y].setBackground(Color.WHITE);
+                }
+                start = clickPoint;
+                gridButtons[row][col].setBackground(new Color(0, 0, 220)); // Brighter blue
+                
+                // If end is already placed, switch to barrier mode
+                if (end != null) {
+                    toolbar.setMode(InteractionMode.ADD_BARRIERS);
+                } else {
+                    toolbar.setMode(InteractionMode.PLACE_END);
+                }
+                break;
+                
+            case PLACE_END:
+                if (end != null) {
+                    // Clear existing end
+                    gridButtons[end.x][end.y].setBackground(Color.WHITE);
+                }
+                end = clickPoint;
+                gridButtons[row][col].setBackground(new Color(220, 0, 0)); // Brighter red
+                
+                // Switch to barrier mode
+                toolbar.setMode(InteractionMode.ADD_BARRIERS);
+                
+                // Run pathfinding if start is also placed
+                if (start != null) {
+                    runPathfinding();
+                }
+                break;
+                
+            case ADD_BARRIERS:
+                if (!clickPoint.equals(start) && !clickPoint.equals(end)) {
+                    isDragging = true;
+                    barrierDragMode = true;
+                    addBarrier(row, col);
+                }
+                break;
+                
+            case REMOVE_BARRIERS:
+                isDragging = true;
+                barrierDragMode = false;
+                removeBarrier(row, col);
+                break;
+                
+            case MOVE:
+                if (clickPoint.equals(start) || clickPoint.equals(end)) {
+                    isDragging = true;
+                    dragSource = clickPoint;
+                }
+                break;
+        }
+    }
+    
+    /**
+     * Handles mouse drag events (when entering a new cell while dragging).
+     * 
+     * @param row Row index
+     * @param col Column index
+     */
+    private void handleMouseDrag(int row, int col) {
+        Point currentPoint = new Point(row, col);
+        
+        // Don't do anything if we're dragging over the same point
+        if (dragSource != null && currentPoint.equals(dragSource)) {
+            return;
+        }
+        
+        switch (currentMode) {
+            case PLACE_START:
+            case PLACE_END:
+                // Do nothing for these modes during drag
+                break;
+                
+            case ADD_BARRIERS:
+            case REMOVE_BARRIERS:
+                if (barrierDragMode) {
+                    if (!currentPoint.equals(start) && !currentPoint.equals(end)) {
+                        addBarrier(row, col);
+                    }
+                } else {
+                    removeBarrier(row, col);
+                }
+                break;
+                
+            case MOVE:
+                if (dragSource != null) {
+                    if (!currentPoint.equals(start) && !currentPoint.equals(end)) {
+                        if (dragSource.equals(start)) {
+                            // Move start point
+                            gridButtons[start.x][start.y].setBackground(Color.WHITE);
+                            
+                            // Don't remove barriers when just passing over during drag
+                            // The visual change is temporary during dragging
+                            
+                            start = currentPoint;
+                            gridButtons[row][col].setBackground(new Color(0, 0, 220)); // Brighter blue
+                            dragSource = start;
+                            
+                            // Update path if end is placed
+                            if (end != null && !isAnimationToggled) {
+                                clearPath();
+                                runPathfinding();
+                            }
+                        } else if (dragSource.equals(end)) {
+                            // Move end point
+                            gridButtons[end.x][end.y].setBackground(Color.WHITE);
+                            
+                            // Don't remove barriers when just passing over during drag
+                            // The visual change is temporary during dragging
+                            
+                            end = currentPoint;
+                            gridButtons[row][col].setBackground(new Color(220, 0, 0)); // Brighter red
+                            dragSource = end;
+                            
+                            // Update path if start is placed
+                            if (start != null && !isAnimationToggled) {
+                                clearPath();
+                                runPathfinding();
+                            }
+                        }
+                    }
+                }
+                break;
+        }
+    }
+    
+    /**
+     * Handles mouse release events.
+     */
+    private void handleMouseReleased() {
+        // When drag is complete, check if start or end point is on a barrier
+        // and remove the barrier if needed (only at final placement)
+        if (dragSource != null) {
+            // Check if we were dragging start or end
+            if (start != null && dragSource.equals(start)) {
+                // Remove barrier if the start point is finally placed on a barrier
+                if (barriers.contains(start)) {
+                    barriers.remove(start);
+                    // Update pathfinding if needed
+                    if (end != null && !isAnimationToggled) {
+                        clearPath();
+                        runPathfinding();
+                    }
+                }
+            } else if (end != null && dragSource.equals(end)) {
+                // Remove barrier if the end point is finally placed on a barrier
+                if (barriers.contains(end)) {
+                    barriers.remove(end);
+                    // Update pathfinding if needed
+                    if (start != null && !isAnimationToggled) {
+                        clearPath();
+                        runPathfinding();
+                    }
+                }
+            }
+        }
+        
+        isDragging = false;
+        dragSource = null;
     }
     
     /**
@@ -253,23 +547,6 @@ public class PathFinderController extends JPanel {
                 updateGridSizeWithPopup(null);
             }
         });
-    }
-    
-    /**
-     * Handles grid button clicks for setting start/end points and barriers.
-     */
-    private void handleButtonClick(int row, int col) {
-        if (start == null) {
-            stopAnimation = false;
-            start = new Point(row, col);
-            gridButtons[row][col].setBackground(Color.BLUE);
-        } else if (end == null) {
-            end = new Point(row, col);
-            gridButtons[row][col].setBackground(Color.RED);
-            startPathfinding();
-        } else {
-            addBarrier(row, col);
-        }
     }
     
     /**
@@ -456,45 +733,32 @@ public class PathFinderController extends JPanel {
             mazeDensitySlider.setMaximum(gridSize * gridSize);
         }
         
-        removeAll();
-        revalidate();
-        repaint();
+        gridPanel.removeAll();
+        gridPanel.revalidate();
+        gridPanel.repaint();
         
-        setLayout(new GridLayout(gridSize, gridSize));
         gridButtons = new JButton[gridSize][gridSize];
         barriers.clear();
         
-        for (int row = 0; row < gridSize; row++) {
-            for (int col = 0; col < gridSize; col++) {
-                gridButtons[row][col] = new JButton();
-                gridButtons[row][col].setPreferredSize(new Dimension(buttonSize, buttonSize));
-                gridButtons[row][col].setBackground(Color.WHITE);
-                add(gridButtons[row][col]);
-                
-                final int r = row;
-                final int c = col;
-                gridButtons[row][col].addActionListener(e -> handleButtonClick(r, c));
-                gridButtons[row][col].addMouseListener(new MouseAdapter() {
-                    @Override
-                    public void mouseClicked(MouseEvent e) {
-                        if (SwingUtilities.isRightMouseButton(e)) {
-                            removeBarrier(r, c);
-                        }
-                    }
-                });
-            }
-        }
+        // Update cell size property for the controller
+        cellSize = buttonSize;
+        
+        initializeGrid();
         
         reset();
         
-        JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        
+        // Update algorithm components with new grid size
         pathFinder = new PathFinder(gridSize, barriers);
         mazeGenerator = new MazeGenerator(gridSize);
         
         statusPanel.showStatusMessage("Grid size updated to " + gridSize + "x" + gridSize, Color.BLUE);
+        
+        // Get parent container and resize
+        Window window = SwingUtilities.getWindowAncestor(this);
+        if (window != null) {
+            window.pack();
+            window.setLocationRelativeTo(null);
+        }
     }
     
     /**
@@ -503,7 +767,7 @@ public class PathFinderController extends JPanel {
     private void visualizePath(List<Point> path) {
         for (Point p : path) {
             if (!p.equals(start) && !p.equals(end)) {
-                gridButtons[p.x][p.y].setBackground(Color.GREEN);
+                gridButtons[p.x][p.y].setBackground(new Color(0, 180, 0)); // Brighter green
             }
         }
     }
@@ -531,13 +795,13 @@ public class PathFinderController extends JPanel {
                 if (explorationIndex < explorationPath.size()) {
                     Point p = explorationPath.get(explorationIndex);
                     if (!p.equals(start) && !p.equals(end)) {
-                        gridButtons[p.x][p.y].setBackground(Color.YELLOW);
+                        gridButtons[p.x][p.y].setBackground(new Color(255, 215, 0)); // Brighter yellow
                     }
                     explorationIndex++;
                 } else if (fastestIndex < fastestPath.size()) {
                     Point p = fastestPath.get(fastestIndex);
                     if (!p.equals(start) && !p.equals(end)) {
-                        gridButtons[p.x][p.y].setBackground(Color.GREEN);
+                        gridButtons[p.x][p.y].setBackground(new Color(0, 180, 0)); // Brighter green
                     }
                     fastestIndex++;
                 } else {
@@ -573,6 +837,9 @@ public class PathFinderController extends JPanel {
         statusPanel.updateGridStats(gridSize, 0);
         statusPanel.showStatusMessage("Grid cleared", Color.BLUE);
         analysisPanel.updateIndicators(0, 0);
+        
+        // Reset to start tool
+        toolbar.setMode(InteractionMode.PLACE_START);
     }
     
     /**
@@ -662,7 +929,7 @@ public class PathFinderController extends JPanel {
      */
     private void takeGridScreenshot() {
         File outputFile = new File("grid_screenshot.png");
-        if (GridUtils.takeScreenshot(this, outputFile)) {
+        if (GridUtils.takeScreenshot(gridPanel, outputFile)) {
             statusPanel.showStatusMessage("Screenshot saved", Color.GREEN);
         } else {
             statusPanel.showStatusMessage("Screenshot failed", Color.RED);

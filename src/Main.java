@@ -49,6 +49,8 @@ public class Main extends JPanel {
                 gridButtons[row][col] = new JButton();
                 gridButtons[row][col].setPreferredSize(new Dimension(30, 30));
                 gridButtons[row][col].setBackground(Color.WHITE);
+                gridButtons[row][col].setOpaque(true);
+                gridButtons[row][col].setBorderPainted(true);  // Show border for white cells
                 add(gridButtons[row][col]);
 
                 final int r = row;
@@ -458,6 +460,8 @@ public class Main extends JPanel {
                 gridButtons[row][col] = new JButton();
                 gridButtons[row][col].setPreferredSize(new Dimension(buttonSize, buttonSize));
                 gridButtons[row][col].setBackground(Color.WHITE);
+                gridButtons[row][col].setOpaque(true);
+                gridButtons[row][col].setBorderPainted(true);  // Show border for white cells
                 add(gridButtons[row][col]);
 
                 final int r = row;
@@ -506,10 +510,12 @@ public class Main extends JPanel {
         if (start == null) {
             stopAnimation = false;
             start = new Point(row, col);
-            gridButtons[row][col].setBackground(Color.blue);
+            gridButtons[row][col].setBackground(new Color(0, 0, 220)); // Brighter blue
+            gridButtons[row][col].setBorderPainted(false); // Hide border for colored cells
         } else if (end == null) {
             end = new Point(row, col);
-            gridButtons[row][col].setBackground(Color.RED);
+            gridButtons[row][col].setBackground(new Color(220, 0, 0)); // Brighter red
+            gridButtons[row][col].setBorderPainted(false); // Hide border for colored cells
             List<List<Point>> paths = aStarPathfinding();
             int optimality = calculateOptimality(paths.get(1));
             int efficiency = calculateEfficiency(paths.get(0).size(), GRID_SIZE*GRID_SIZE);
@@ -528,6 +534,7 @@ public class Main extends JPanel {
         if (!barrierToAdd.equals(start) && !barrierToAdd.equals(end)) {
             barriers.add(barrierToAdd);
             gridButtons[row][col].setBackground(Color.BLACK);
+            gridButtons[row][col].setBorderPainted(false); // Hide border for colored cells
             clearPath();
             if (!isAnimationToggled) {
                 List<List<Point>> paths = aStarPathfinding();
@@ -548,6 +555,7 @@ public class Main extends JPanel {
         if (!barrierToRemove.equals(start) && !barrierToRemove.equals(end)) {
             barriers.removeIf(p -> p.equals(barrierToRemove));
             gridButtons[row][col].setBackground(Color.WHITE);
+            gridButtons[row][col].setBorderPainted(true); // Show border for white cells
             clearPath();
             if (!isAnimationToggled) {
                 List<List<Point>> paths = aStarPathfinding();
@@ -583,15 +591,19 @@ public class Main extends JPanel {
 
                     if (isColorSimilar(pixelColor, Color.BLUE)) {
                         start = new Point(row, col);
-                        gridButtons[row][col].setBackground(Color.BLUE);
+                        gridButtons[row][col].setBackground(new Color(0, 0, 220)); // Brighter blue
+                        gridButtons[row][col].setBorderPainted(false);
                     } else if (isColorSimilar(pixelColor, Color.RED)) {
                         end = new Point(row, col);
-                        gridButtons[row][col].setBackground(Color.RED);
+                        gridButtons[row][col].setBackground(new Color(220, 0, 0)); // Brighter red
+                        gridButtons[row][col].setBorderPainted(false);
                     } else if (isColorSimilar(pixelColor, Color.BLACK)) {
                         barriers.add(new Point(row, col));
                         gridButtons[row][col].setBackground(Color.BLACK);
+                        gridButtons[row][col].setBorderPainted(false);
                     } else {
                         gridButtons[row][col].setBackground(Color.WHITE);
+                        gridButtons[row][col].setBorderPainted(true);
                     }
                 }
             }
@@ -712,7 +724,8 @@ public class Main extends JPanel {
     private void visualizePath(List<Point> path) {
         for (Point p : path) {
             if (!p.equals(start) && !p.equals(end)) {
-                gridButtons[p.x][p.y].setBackground(Color.GREEN);
+                gridButtons[p.x][p.y].setBackground(new Color(0, 180, 0)); // Brighter green
+                gridButtons[p.x][p.y].setBorderPainted(false); // Hide border for colored cells
             }
         }
     }
@@ -737,14 +750,16 @@ public class Main extends JPanel {
                 if (explorationIndex < explorationPath.size()) {
                     Point p = explorationPath.get(explorationIndex);
                     if (!p.equals(start) && !p.equals(end)) {
-                        gridButtons[p.x][p.y].setBackground(Color.YELLOW);
+                        gridButtons[p.x][p.y].setBackground(new Color(255, 215, 0)); // Brighter yellow
+                        gridButtons[p.x][p.y].setBorderPainted(false); // Hide border for colored cells
                     }
                     explorationIndex++;
                 }
                 else if (fastestIndex < fastestPath.size()) {
                     Point p = fastestPath.get(fastestIndex);
                     if (!p.equals(start) && !p.equals(end)) {
-                        gridButtons[p.x][p.y].setBackground(Color.GREEN);
+                        gridButtons[p.x][p.y].setBackground(new Color(0, 180, 0)); // Brighter green
+                        gridButtons[p.x][p.y].setBorderPainted(false); // Hide border for colored cells
                     }
                     fastestIndex++;
                 }
@@ -801,6 +816,7 @@ public class Main extends JPanel {
         for (int row = 0; row < GRID_SIZE; row++) {
             for (int col = 0; col < GRID_SIZE; col++) {
                 gridButtons[row][col].setBackground(Color.WHITE);
+                gridButtons[row][col].setBorderPainted(true); // Show border for white cells
             }
         }
         updatePathMetrics(0, 0, 0); // Reset metrics
@@ -815,6 +831,7 @@ public class Main extends JPanel {
                 Point currentPoint = new Point(row, col);
                 if (!currentPoint.equals(start) && !currentPoint.equals(end) && !barriers.contains(currentPoint)) {
                     gridButtons[row][col].setBackground(Color.WHITE);
+                    gridButtons[row][col].setBorderPainted(true); // Show border for white cells
                 }
             }
         }
@@ -834,12 +851,12 @@ public class Main extends JPanel {
 
         Random random = new Random();
         start = new Point(random.nextInt(GRID_SIZE), random.nextInt(GRID_SIZE));
-        gridButtons[start.x][start.y].setBackground(Color.blue);
+        gridButtons[start.x][start.y].setBackground(new Color(0, 0, 220)); // Brighter blue
 
         do {
             end = new Point(random.nextInt(GRID_SIZE), random.nextInt(GRID_SIZE));
         } while (start.equals(end));
-        gridButtons[end.x][end.y].setBackground(Color.RED);
+        gridButtons[end.x][end.y].setBackground(new Color(220, 0, 0)); // Brighter red
 
         int numBarriers = random.nextInt(mazeDensity);
         for (int i = 0; i < numBarriers; i++) {
@@ -865,6 +882,7 @@ public class Main extends JPanel {
         for (int row = 0; row < GRID_SIZE; row++) {
             for (int col = 0; col < GRID_SIZE; col++) {
                 gridButtons[row][col].setBackground(Color.WHITE);
+                gridButtons[row][col].setBorderPainted(true);
             }
         }
         boolean[][] mazeGrid = new boolean[GRID_SIZE][GRID_SIZE];
@@ -878,8 +896,10 @@ public class Main extends JPanel {
         Random random = new Random();
         start = new Point(random.nextInt(GRID_SIZE), random.nextInt(GRID_SIZE));
         end = new Point(random.nextInt(GRID_SIZE), random.nextInt(GRID_SIZE));
-        gridButtons[end.x][end.y].setBackground(Color.RED);
-        gridButtons[start.x][start.y].setBackground(Color.BLUE);
+        gridButtons[end.x][end.y].setBackground(new Color(220, 0, 0)); // Brighter red
+        gridButtons[end.x][end.y].setBorderPainted(false);
+        gridButtons[start.x][start.y].setBackground(new Color(0, 0, 220)); // Brighter blue
+        gridButtons[start.x][start.y].setBorderPainted(false);
 
         mazeGrid[start.x][start.y] = false;
 
@@ -914,11 +934,13 @@ public class Main extends JPanel {
             for (int j = 0; j < GRID_SIZE; j++) {
                 if (mazeGrid[i][j] && !new Point(i,j).equals(start) && !new Point(i,j).equals(end) ) {
                     gridButtons[i][j].setBackground(Color.BLACK);
+                    gridButtons[i][j].setBorderPainted(false);
                     barriers.add(new Point(i,j));
                 } else {
                     Point check = new Point(i, j);
                     if (!check.equals(start) && !check.equals(end)) {
                         gridButtons[i][j].setBackground(Color.WHITE);
+                        gridButtons[i][j].setBorderPainted(true);
                     }
                 }
             }

@@ -17,11 +17,28 @@ public class Main {
      */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
+            try {
+                // Set system look and feel for better appearance
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e) {
+                // Fall back to default look and feel
+                e.printStackTrace();
+            }
+            
+            // Create main frame
             JFrame frame = new JFrame("Path Finding Algorithm Visualizer");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.getContentPane().add(new PathFinderController());
+            
+            // Create controller
+            PathFinderController controller = new PathFinderController();
+            
+            // Add controller to frame
+            frame.getContentPane().add(controller);
+            
+            // Show frame
             frame.pack();
             frame.setLocationRelativeTo(null);
+            //frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
             frame.setVisible(true);
         });
     }
